@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  whale-alert:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY:-}
+      - SOLANA_RPC=${SOLANA_RPC:-https://api.mainnet-beta.solana.com}
+    volumes:
+      - ./data.json:/app/data.json
+    restart: unless-stopped

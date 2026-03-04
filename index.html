@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>Whale Alert Terminal - Track Crypto Whale Movements</title>
+    <meta name="description" content="Monitor whale wallet movements across 9 blockchain networks. Get real-time alerts for large crypto transactions. Track Ethereum, Bitcoin, Solana, and more.">
+    <meta name="keywords" content="crypto whale tracker, whale alert, blockchain tracker, ethereum transactions, bitcoin whale, crypto alerts, defi monitor, nft whale tracking, cryptocurrency surveillance">
+    <meta name="author" content="Whale Alert Terminal">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://whale-alert.com/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://whale-alert.com/">
+    <meta property="og:title" content="Whale Alert Terminal - Track Crypto Whale Movements">
+    <meta property="og:description" content="Monitor whale wallet movements across 9 blockchain networks. Get real-time alerts for large crypto transactions.">
+    <meta property="og:image" content="https://whale-alert.com/og-image.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://whale-alert.com/">
+    <meta property="twitter:title" content="Whale Alert Terminal - Track Crypto Whale Movements">
+    <meta property="twitter:description" content="Monitor whale wallet movements across 9 blockchain networks. Get real-time alerts.">
+    <meta property="twitter:image" content="https://whale-alert.com/og-image.png">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Whale Alert Terminal",
+        "description": "Monitor whale wallet movements across 9 blockchain networks with real-time alerts.",
+        "url": "https://whale-alert.com",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "Real-time whale wallet monitoring",
+            "Multi-chain support (9 networks)",
+            "Telegram alerts",
+            "Price alerts",
+            "Gas tracker"
+        ],
+        "browserRequirements": "Requires a modern web browser."
+    }
+    </script>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐋</text></svg>">
+    
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --phosphor: #00FF41;
+            --phosphor-dim: #00aa2a;
+            --bg: #0a0a0a;
+            --bg-light: #111111;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--phosphor);
+            line-height: 1.6;
+        }
+        
+        /* CRT Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        header {
+            padding: 20px 0;
+            border-bottom: 2px solid var(--phosphor);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-family: 'VT323', monospace;
+            font-size: 32px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        
+        .logo::before { content: '█ '; animation: blink 1s infinite; }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .nav-links a {
+            color: var(--phosphor);
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+        
+        .nav-links a:hover {
+            background: var(--phosphor);
+            color: var(--bg);
+        }
+        
+        /* Hero */
+        .hero {
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-family: 'VT323', monospace;
+            font-size: 64px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--phosphor);
+        }
+        
+        .hero p {
+            font-size: 24px;
+            color: var(--phosphor-dim);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .btn {
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            padding: 15px 40px;
+            border: 2px solid var(--phosphor);
+            background: transparent;
+            color: var(--phosphor);
+            cursor: pointer;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: var(--phosphor);
+            color: var(--bg);
+        }
+        
+        .btn-primary {
+            background: var(--phosphor);
+            color: var(--bg);
+        }
+        
+        .btn-primary:hover {
+            background: var(--phosphor-dim);
+            border-color: var(--phosphor-dim);
+        }
+        
+        /* Features */
+        .features {
+            padding: 60px 0;
+            border-top: 2px solid var(--phosphor);
+            border-bottom: 2px solid var(--phosphor);
+        }
+        
+        .features h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        
+        .feature {
+            border: 2px solid var(--phosphor);
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .feature h3 {
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .feature p {
+            color: var(--phosphor-dim);
+            font-size: 16px;
+        }
+        
+        /* Chains */
+        .chains {
+            padding: 60px 0;
+        }
+        
+        .chains h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+        
+        .chains-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .chain-tag {
+            padding: 10px 20px;
+            border: 1px solid var(--phosphor);
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--phosphor-dim);
+        }
+        
+        /* Pricing */
+        .pricing {
+            padding: 60px 0;
+            border-top: 2px solid var(--phosphor);
+        }
+        
+        .pricing h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .price-card {
+            border: 2px solid var(--phosphor);
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .price-card.featured {
+            background: var(--bg-light);
+            transform: scale(1.05);
+        }
+        
+        .price-card h3 {
+            font-family: 'VT323', monospace;
+            font-size: 28px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        
+        .price {
+            font-family: 'VT323', monospace;
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .price span {
+            font-size: 18px;
+        }
+        
+        .price-card ul {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+        
+        .price-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--phosphor-dim);
+            color: var(--phosphor-dim);
+        }
+        
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 2px solid var(--phosphor);
+            text-align: center;
+            color: var(--phosphor-dim);
+        }
+        
+        footer a {
+            color: var(--phosphor);
+            text-decoration: none;
+        }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 40px; }
+            .features-grid, .pricing-grid { grid-template-columns: 1fr; }
+            .cta-buttons { flex-direction: column; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Whale Alert Terminal</div>
+                <div class="nav-links">
+                    <a href="#features">Features</a>
+                    <a href="#chains">Chains</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#" onclick="showAuthModal();return false;">Login</a>
+                    <a href="/dashboard.html">Dashboard</a>
+                </div>
+            </nav>
+        </div>
+    </header>
+    
+    <section class="hero">
+        <div class="container">
+            <h1>Track The Whales</h1>
+            <p>Monitor cryptocurrency whale wallets across multiple chains in real-time. Get Telegram alerts when big players move.</p>
+            <div class="cta-buttons">
+                <a href="/dashboard.html" class="btn btn-primary">Launch Dashboard</a>
+                <a href="#features" class="btn">Learn More</a>
+            </div>
+        </div>
+    </section>
+    
+    <section class="features" id="features">
+        <div class="container">
+            <h2>_System Features</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🐋</div>
+                    <h3>Whale Tracking</h3>
+                    <p>Monitor wallet addresses of known whales, exchanges, and institutional players.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Live Prices</h3>
+                    <p>Real-time cryptocurrency prices across all supported chains with history.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔔</div>
+                    <h3>Telegram Alerts</h3>
+                    <p>Instant notifications when whales make moves above your threshold.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📈</div>
+                    <h3>Price Alerts</h3>
+                    <p>Set custom price alerts for any supported cryptocurrency.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⛽</div>
+                    <h3>Gas Tracker</h3>
+                    <p>Monitor gas prices across Ethereum, Base, Arbitrum, and more.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Market Sentiment</h3>
+                    <p>AI-powered sentiment analysis based on whale activity patterns.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="chains" id="chains">
+        <div class="container">
+            <h2>_Supported Networks</h2>
+            <div class="chains-list">
+                <span class="chain-tag">Ethereum</span>
+                <span class="chain-tag">Bitcoin</span>
+                <span class="chain-tag">Solana</span>
+                <span class="chain-tag">Base</span>
+                <span class="chain-tag">Arbitrum</span>
+                <span class="chain-tag">Avalanche</span>
+                <span class="chain-tag">Polygon</span>
+                <span class="chain-tag">Tron</span>
+                <span class="chain-tag">BNB Chain</span>
+            </div>
+        </div>
+    </section>
+    
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2>_Pricing Plans</h2>
+            <div class="pricing-grid">
+                <div class="price-card">
+                    <h3>Free</h3>
+                    <div class="price">$0<span>/mo</span></div>
+                    <ul>
+                        <li>5 Wallets</li>
+                        <li>3 Price Alerts</li>
+                        <li>All Chains</li>
+                        <li>Telegram Alerts</li>
+                    </ul>
+                    <a href="/dashboard.html" class="btn">Get Started</a>
+                </div>
+                <div class="price-card featured">
+                    <h3>Pro</h3>
+                    <div class="price">$9.99<span>/mo</span></div>
+                    <ul>
+                        <li>Unlimited Wallets</li>
+                        <li>Unlimited Alerts</li>
+                        <li>Custom API Keys</li>
+                        <li>Priority Support</li>
+                    </ul>
+                    <a href="/dashboard.html" class="btn btn-primary">Coming Soon</a>
+                </div>
+                <div class="price-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">$49.99<span>/mo</span></div>
+                    <ul>
+                        <li>Everything in Pro</li>
+                        <li>API Access</li>
+                        <li>White-label</li>
+                        <li>Dedicated Support</li>
+                    </ul>
+                    <a href="/dashboard.html" class="btn">Coming Soon</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <div class="container">
+            <p>Whale Alert Terminal v1.0 — Built for traders, by traders.</p>
+            <p style="margin-top:10px;">© 2026 Whale Alert Terminal. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- AUTH MODAL -->
+    <div class="modal-overlay" id="authModal" style="display:none;">
+        <div class="modal" style="background:var(--bg-light);border:2px solid var(--phosphor);border-radius:5px;padding:30px;max-width:400px;width:90%;">
+            <h3 style="margin-bottom:20px;text-align:center;" id="authTitle">_LOGIN</h3>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;">EMAIL:</label>
+                <input type="email" id="authEmail" style="width:100%;padding:10px;background:#111;border:1px solid var(--phosphor);color:var(--phosphor);font-family:inherit;font-size:14px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;">PASSWORD:</label>
+                <input type="password" id="authPassword" style="width:100%;padding:10px;background:#111;border:1px solid var(--phosphor);color:var(--phosphor);font-family:inherit;font-size:14px;">
+            </div>
+            <div id="authNameField" style="margin-bottom:15px;display:none;">
+                <label style="display:block;margin-bottom:5px;">NAME (OPTIONAL):</label>
+                <input type="text" id="authName" style="width:100%;padding:10px;background:#111;border:1px solid var(--phosphor);color:var(--phosphor);font-family:inherit;font-size:14px;">
+            </div>
+            <div id="authError" style="color:#ff4444;margin-bottom:15px;display:none;"></div>
+            <button onclick="handleAuth()" style="width:100%;padding:12px;background:var(--phosphor);color:#000;border:none;font-family:inherit;font-size:16px;cursor:pointer;margin-bottom:15px;">[ LOGIN ]</button>
+            <div style="text-align:center;">
+                <a href="#" onclick="toggleAuthMode();return false;" id="authToggle" style="color:var(--phosphor);">>> CREATE ACCOUNT</a>
+            </div>
+            <button onclick="closeAuthModal()" style="width:100%;padding:8px;background:none;border:1px solid var(--phosphor-dim);color:var(--phosphor-dim);font-family:inherit;cursor:pointer;margin-top:10px;">[X] CLOSE</button>
+        </div>
+    </div>
+    
+    <script>
+        let authMode = 'login';
+        let authToken = localStorage.getItem('authToken');
+        
+        function showAuthModal() {
+            document.getElementById('authModal').style.display = 'flex';
+        }
+        
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('authError').style.display = 'none';
+        }
+        
+        function toggleAuthMode() {
+            authMode = authMode === 'login' ? 'register' : 'login';
+            document.getElementById('authTitle').textContent = authMode === 'login' ? '_LOGIN' : '_REGISTER';
+            document.querySelector('#authModal button').textContent = authMode === 'login' ? '[ LOGIN ]' : '[ CREATE ACCOUNT ]';
+            document.getElementById('authToggle').textContent = authMode === 'login' ? '>> CREATE ACCOUNT' : '>> ALREADY HAVE ACCOUNT';
+            document.getElementById('authNameField').style.display = authMode === 'register' ? 'block' : 'none';
+            document.getElementById('authError').style.display = 'none';
+        }
+        
+        async function handleAuth() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            const name = document.getElementById('authName').value.trim();
+            const errorEl = document.getElementById('authError');
+            
+            if (!email || !password) {
+                errorEl.textContent = 'Email and password required';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+            const body = authMode === 'login' ? { email, password } : { email, password, name };
+            
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userEmail', data.user.email);
+                    closeAuthModal();
+                    // Redirect to dashboard
+                    window.location.href = '/dashboard.html';
+                } else {
+                    errorEl.textContent = data.error;
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error';
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        // Check if already logged in
+        if (authToken) {
+            // Show logged in state in nav
+            document.querySelector('.nav-links').innerHTML = 
+                '<span style="color:var(--phosphor-dim);margin-right:10px;">' + (localStorage.getItem('userEmail') || '') + '</span>' +
+                '<a href="/dashboard.html">Dashboard</a>' +
+                '<a href="#" onclick="logout()">Logout</a>';
+        }
+        
+        function logout() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userEmail');
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
