@@ -4,6 +4,8 @@ const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const WebSocket = require('ws');
 const auth = require('./auth');
 const payments = require('./payments');
 const analytics = require('./analytics');
@@ -238,6 +240,48 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(staticPath));
 
+// ============================================
+// WEBSOCKET SERVER
+// ============================================
+let wss;
+
+function initWebSocket(server) {
+    wss = new WebSocket.Server({ server });
+    
+    wss.on('connection', (ws) => {
+        console.log('🔌 WebSocket client connected');
+        
+        // Send current state immediately on connect
+        ws.send(JSON.stringify({
+            type: 'init',
+            data: {
+                alerts: alerts.slice(0, 20),
+                prices,
+                gas: gasPrices,
+                sentiment: sentimentData
+            }
+        }));
+        
+        ws.on('close', () => {
+            console.log('🔌 WebSocket client disconnected');
+        });
+    });
+    
+    console.log('✅ WebSocket server initialized');
+}
+
+// Broadcast to all connected clients
+function broadcast(type, data) {
+    if (!wss) return;
+    
+    const message = JSON.stringify({ type, data });
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
+}
+
 // Apply general rate limiting to all API routes
 app.use('/api', apiLimiter);
 
@@ -279,6 +323,16 @@ app.get('/settings.html', (req, res) => {
 
 // API Endpoints
 app.get('/api/alerts', (req, res) => res.json({ alerts: alerts.slice(0, 20) }));
+
+// WebSocket connection info
+app.get('/api/ws', (req, res) => {
+    const protocol = req.protocol === 'https' ? 'wss' : 'ws';
+    res.json({ 
+        url: `${protocol}://${req.get('host')}`,
+        supported: true
+    });
+});
+
 app.get('/api/wallets', (req, res) => {
     const allWallets = Object.entries(WHALE_WALLETS).flatMap(([chain, wallets]) =>
         wallets.map(w => ({ ...w, chain, chainName: CHAINS[chain]?.name, chainColor: CHAINS[chain]?.color }))
@@ -935,6 +989,9 @@ function addAlert(data) {
     
     console.log(`\n🐋 WHALE ALERT - ${data.chain} | ${data.label}: ${data.amount} ($${data.usd.toLocaleString()})`);
     
+    // Broadcast to WebSocket clients
+    broadcast('alert', alert);
+    
     if (bot && chatId) {
         bot.sendMessage(chatId, `🐋 <b>Whale Alert</b>\n\n<b>${data.chain}</b> - ${data.label}\n${data.amount} ($${data.usd.toLocaleString()})`, { parse_mode: 'HTML' }).catch(() => {});
     }
@@ -958,10 +1015,18 @@ async function startMonitoring() {
 
     await checkAll();
     setInterval(checkAll, CONFIG.CHECK_INTERVAL_MS);
+    
+    // Also broadcast prices every 30 seconds
+    setInterval(() => {
+        broadcast('prices', { prices, gas: gasPrices, sentiment: sentimentData });
+    }, 30000);
 
     const PORT = 3000;
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    initWebSocket(server);
+    server.listen(PORT, () => {
         console.log(`🌐 Server: http://localhost:${PORT}`);
+        console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
     });
 }
 

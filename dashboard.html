@@ -657,6 +657,86 @@
 
     <script>
         const API = 'http://localhost:3000';
+        let ws = null;
+        
+        // WebSocket connection for real-time alerts
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    console.log('🔌 WebSocket connected');
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        handleWebSocketMessage(msg);
+                    } catch (e) {}
+                };
+                
+                ws.onclose = () => {
+                    console.log('🔌 WebSocket disconnected, reconnecting...');
+                    setTimeout(initWebSocket, 3000);
+                };
+                
+                ws.onerror = (err) => {
+                    console.log('WebSocket error:', err);
+                };
+            } catch (e) {
+                console.log('WebSocket init failed:', e);
+            }
+        }
+        
+        function handleWebSocketMessage(msg) {
+            if (msg.type === 'alert') {
+                // New whale alert - prepend to table
+                const alert = msg.data;
+                addAlertRow(alert, true);
+                // Update count
+                const count = document.getElementById('alertsToday');
+                count.textContent = parseInt(count.textContent || '0') + 1;
+            } else if (msg.type === 'prices') {
+                // Price update
+                document.getElementById('btcPrice').textContent = formatPrice(msg.data.prices?.btc);
+                document.getElementById('ethPrice').textContent = formatPrice(msg.data.prices?.eth);
+                document.getElementById('solPrice').textContent = formatPrice(msg.data.prices?.sol);
+                const gas = msg.data.gas?.eth;
+                if (gas) document.getElementById('gasEth').textContent = gas.normal + ' gwei';
+            } else if (msg.type === 'init') {
+                // Initial data - update prices
+                if (msg.data.prices) {
+                    document.getElementById('btcPrice').textContent = formatPrice(msg.data.prices.btc);
+                    document.getElementById('ethPrice').textContent = formatPrice(msg.data.prices.eth);
+                    document.getElementById('solPrice').textContent = formatPrice(msg.data.prices.sol);
+                }
+            }
+        }
+        
+        function addAlertRow(alert, prepend = false) {
+            const container = document.getElementById('alertsContainer');
+            const table = container.querySelector('table');
+            if (!table) return;
+            
+            const row = `<tr>
+                <td class="wallet">${alert.label || truncateAddr(alert.address)}</td>
+                <td class="amount">${alert.amount}</td>
+                <td>${alert.chain}</td>
+                <td>${formatTime(alert.time)}</td>
+            </tr>`;
+            
+            if (prepend && table.rows.length > 0) {
+                table.insertRow(1).innerHTML = row;
+                // Keep only 10 rows
+                while (table.rows.length > 10) table.deleteRow(table.rows.length - 1);
+            }
+        }
+        
+        // Initialize WebSocket on load
+        initWebSocket();
         
         function formatPrice(num) {
             if (!num) return '$.--';
