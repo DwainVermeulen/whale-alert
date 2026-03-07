@@ -17,7 +17,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const API = 'https://4c735529e10d7632-102-132-150-241.serveousercontent.com';
+const API = 'https://whale-wink.onrender.com';
 
 // ============================================
 // AUTH SCREENS
