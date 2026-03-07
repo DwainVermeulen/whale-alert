@@ -658,8 +658,11 @@
     <script>
         const API = 'http://localhost:3000';
         let ws = null;
+        let pushSubscription = null;
         
-        // WebSocket connection for real-time alerts
+        // ============================================
+        // WEBSOCKET CONNECTION
+        // ============================================
         function initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}`;
@@ -690,6 +693,113 @@
                 console.log('WebSocket init failed:', e);
             }
         }
+        
+        // ============================================
+        // PUSH NOTIFICATIONS
+        // ============================================
+        async function initPushNotifications() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                console.log('Push notifications not supported');
+                return;
+            }
+            
+            try {
+                // Register service worker
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('✅ Service Worker registered');
+                
+                // Check permission
+                const permission = await Notification.permission;
+                if (permission === 'granted') {
+                    await subscribeToPush();
+                } else if (permission === 'default') {
+                    // Will ask on user interaction
+                    console.log('Push permission: default');
+                }
+            } catch (e) {
+                console.log('Push init failed:', e);
+            }
+        }
+        
+        async function askPushPermission() {
+            if (!('Notification' in window)) {
+                console.log('Notifications not supported');
+                return false;
+            }
+            
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                await subscribeToPush();
+                return true;
+            }
+            return false;
+        }
+        
+        async function subscribeToPush() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                
+                // Get VAPID public key from server
+                const response = await fetch(`${API}/api/push/vapidPublicKey`);
+                const { publicKey } = await response.json();
+                
+                if (!publicKey) {
+                    console.log('VAPID key not configured');
+                    return;
+                }
+                
+                // Convert base64 to Uint8Array
+                const keyBuffer = Uint8Array.from(atob(publicKey), c => c.charCodeAt(0));
+                
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: keyBuffer
+                });
+                
+                // Send to server
+                await fetch(`${API}/api/push/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscription)
+                });
+                
+                pushSubscription = subscription;
+                console.log('✅ Push subscription added');
+            } catch (e) {
+                console.log('Push subscription failed:', e);
+            }
+        }
+        
+        // Add button to enable push in UI
+        function addPushButton() {
+            const header = document.querySelector('.header');
+            if (!header) return;
+            
+            const btn = document.createElement('button');
+            btn.id = 'pushBtn';
+            btn.innerHTML = '[ 🔔 PUSH ]';
+            btn.style.cssText = 'background:none;border:1px solid var(--phosphor-dim);color:var(--phosphor-dim);padding:5px 10px;margin-left:10px;cursor:pointer;font-family:inherit;font-size:12px;';
+            btn.onclick = async () => {
+                const granted = await askPushPermission();
+                if (granted) {
+                    btn.innerHTML = '[ 🔔 ON ]';
+                    btn.style.borderColor = 'var(--phosphor)';
+                    btn.style.color = 'var(--phosphor)';
+                }
+            };
+            header.appendChild(btn);
+            
+            // Update button state if already granted
+            if (Notification.permission === 'granted') {
+                btn.innerHTML = '[ 🔔 ON ]';
+                btn.style.borderColor = 'var(--phosphor)';
+                btn.style.color = 'var(--phosphor)';
+            }
+        }
+        
+        // ============================================
+        // WEBSOCKET MESSAGE HANDLER
+        // =========================================
         
         function handleWebSocketMessage(msg) {
             if (msg.type === 'alert') {
@@ -1103,6 +1213,12 @@
         // Initial load
         loadData();
         loadTelegramStatus();
+        
+        // Initialize push notifications
+        initPushNotifications();
+        
+        // Add push button after a short delay
+        setTimeout(addPushButton, 1000);
         
         // Initialize picker values
         document.getElementById('walletChainBtn').dataset.value = 'ethereum';

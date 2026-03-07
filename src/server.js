@@ -6,10 +6,46 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
 const WebSocket = require('ws');
+const webpush = require('web-push');
 const auth = require('./auth');
 const payments = require('./payments');
 const analytics = require('./analytics');
 const emails = require('./emails');
+
+// Web Push configuration
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+if (vapidPublicKey && vapidPrivateKey) {
+    webpush.setVapidDetails(
+        'mailto:support@whale-alert.app',
+        vapidPublicKey,
+        vapidPrivateKey
+    );
+    console.log('✅ Web Push configured');
+}
+
+// Store push subscriptions (in memory - would use DB in production)
+const pushSubscriptions = [];
+
+function sendPushNotification(subscription, payload) {
+    if (!subscription || !vapidPublicKey) return;
+    
+    webpush.sendNotification(
+        subscription,
+        JSON.stringify(payload)
+    ).catch(err => {
+        if (err.statusCode === 410) {
+            // Subscription expired - remove it
+            const idx = pushSubscriptions.indexOf(subscription);
+            if (idx > -1) pushSubscriptions.splice(idx, 1);
+        }
+    });
+}
+
+function broadcastPushNotification(payload) {
+    pushSubscriptions.forEach(sub => sendPushNotification(sub, payload));
+}
 
 const CONFIG = {
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
@@ -323,6 +359,35 @@ app.get('/settings.html', (req, res) => {
 
 // API Endpoints
 app.get('/api/alerts', (req, res) => res.json({ alerts: alerts.slice(0, 20) }));
+
+// Push notification endpoints
+app.get('/api/push/vapidPublicKey', (req, res) => {
+    res.json({ publicKey: vapidPublicKey || '' });
+});
+
+app.post('/api/push/subscribe', (req, res) => {
+    const subscription = req.body;
+    if (!subscription || !subscription.endpoint) {
+        return res.json({ success: false, error: 'Invalid subscription' });
+    }
+    
+    // Check if already subscribed
+    const exists = pushSubscriptions.some(s => s.endpoint === subscription.endpoint);
+    if (!exists) {
+        pushSubscriptions.push(subscription);
+    }
+    
+    res.json({ success: true });
+});
+
+app.post('/api/push/unsubscribe', (req, res) => {
+    const { endpoint } = req.body;
+    const idx = pushSubscriptions.findIndex(s => s.endpoint === endpoint);
+    if (idx > -1) {
+        pushSubscriptions.splice(idx, 1);
+    }
+    res.json({ success: true });
+});
 
 // WebSocket connection info
 app.get('/api/ws', (req, res) => {
@@ -991,6 +1056,16 @@ function addAlert(data) {
     
     // Broadcast to WebSocket clients
     broadcast('alert', alert);
+    
+    // Send browser push notifications
+    const pushPayload = {
+        title: '🐋 Whale Alert',
+        body: `${data.chain} - ${data.label}: ${data.amount} ($${data.usd.toLocaleString()})`,
+        icon: '/favicon.ico',
+        tag: 'whale-alert',
+        data: alert
+    };
+    broadcastPushNotification(pushPayload);
     
     if (bot && chatId) {
         bot.sendMessage(chatId, `🐋 <b>Whale Alert</b>\n\n<b>${data.chain}</b> - ${data.label}\n${data.amount} ($${data.usd.toLocaleString()})`, { parse_mode: 'HTML' }).catch(() => {});
