@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Whale Alert Terminal - Dashboard</title>
+    <title>Whale Wink - Dashboard</title>
     <meta name="description" content="Your whale monitoring dashboard. Track wallet movements, price alerts, and market sentiment.">
     <meta name="robots" content="noindex, nofollow">
     <link rel="canonical" href="https://whale-alert.com/dashboard.html">
@@ -492,7 +492,7 @@
 <body>
     <div class="terminal">
         <div class="header">
-            <div class="logo">WHALE ALERT TERMINAL</div>
+            <div class="logo">WHALE WINK</div>
             <div class="nav">
                 <a href="dashboard.html" class="active">[D] DASHBOARD</a>
             </div>
@@ -502,6 +502,7 @@
                 <span>● LIVE</span>
                 <button onclick="loadData()">↻ REFRESH</button>
                 <button onclick="toggleTheme()">[■] THEME</button>
+                <button id="pushBtn" onclick="askPushPermission()">[ NOTIFY ]</button>
             </div>
         </div>
         
@@ -697,28 +698,28 @@
         // ============================================
         // PUSH NOTIFICATIONS
         // ============================================
-        async function initPushNotifications() {
+        function initPushNotifications() {
             if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                 console.log('Push notifications not supported');
                 return;
             }
             
-            try {
-                // Register service worker
-                const registration = await navigator.serviceWorker.register('/sw.js');
-                console.log('✅ Service Worker registered');
-                
-                // Check permission
-                const permission = await Notification.permission;
-                if (permission === 'granted') {
-                    await subscribeToPush();
-                } else if (permission === 'default') {
-                    // Will ask on user interaction
-                    console.log('Push permission: default');
+            // Check if already granted
+            if (Notification.permission === 'granted') {
+                const btn = document.getElementById('pushBtn');
+                if (btn) {
+                    btn.innerHTML = '[ NOTIFY ON ]';
+                    btn.style.borderColor = 'var(--phosphor)';
+                    btn.style.color = 'var(--phosphor)';
                 }
-            } catch (e) {
-                console.log('Push init failed:', e);
             }
+            
+            // Register service worker
+            navigator.serviceWorker.register('/sw.js').then(() => {
+                console.log('✅ Service Worker registered');
+            }).catch(e => {
+                console.log('Service Worker registration failed:', e);
+            });
         }
         
         async function askPushPermission() {
@@ -770,31 +771,9 @@
             }
         }
         
-        // Add button to enable push in UI
+        // Add button to enable push in UI (unused - button now in HTML)
         function addPushButton() {
-            const header = document.querySelector('.header');
-            if (!header) return;
-            
-            const btn = document.createElement('button');
-            btn.id = 'pushBtn';
-            btn.innerHTML = '[ 🔔 PUSH ]';
-            btn.style.cssText = 'background:none;border:1px solid var(--phosphor-dim);color:var(--phosphor-dim);padding:5px 10px;margin-left:10px;cursor:pointer;font-family:inherit;font-size:12px;';
-            btn.onclick = async () => {
-                const granted = await askPushPermission();
-                if (granted) {
-                    btn.innerHTML = '[ 🔔 ON ]';
-                    btn.style.borderColor = 'var(--phosphor)';
-                    btn.style.color = 'var(--phosphor)';
-                }
-            };
-            header.appendChild(btn);
-            
-            // Update button state if already granted
-            if (Notification.permission === 'granted') {
-                btn.innerHTML = '[ 🔔 ON ]';
-                btn.style.borderColor = 'var(--phosphor)';
-                btn.style.color = 'var(--phosphor)';
-            }
+            // Button is now in HTML directly
         }
         
         // ============================================

@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, RefreshControl } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configure notifications
 Notifications.setNotificationHandler({
@@ -16,7 +17,103 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const API = 'http://192.168.1.100:3000'; // Update for production
+const API = 'https://4c735529e10d7632-102-132-150-241.serveousercontent.com';
+
+// ============================================
+// AUTH SCREENS
+// ============================================
+function LoginScreen({ onLogin }: { onLogin: (token: string, user: any) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState('');
+
+  const handleAuth = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please enter email and password');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      const body = isRegister ? { email, password, name } : { email, password };
+      
+      const res = await axios.post(`${API}${endpoint}`, body);
+      
+      if (res.data.success) {
+        const token = res.data.token;
+        const user = res.data.user;
+        
+        // Save token
+        await AsyncStorage.setItem('authToken', token);
+        await AsyncStorage.setItem('userEmail', email);
+        
+        onLogin(token, user);
+      } else {
+        Alert.alert('Error', res.data.error || 'Authentication failed');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.error || 'Network error');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <ScrollView style={styles.authContainer}>
+      <View style={styles.authBox}>
+        <Text style={styles.authTitle}>🐋 WHALE ALERT</Text>
+        <Text style={styles.authSubtitle}>{isRegister ? 'CREATE ACCOUNT' : 'LOGIN'}</Text>
+        
+        {isRegister && (
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="NAME (OPTIONAL)"
+            placeholderTextColor="#666"
+          />
+        )}
+        
+        <TextInput
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="EMAIL"
+          placeholderTextColor="#666"
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="PASSWORD"
+          placeholderTextColor="#666"
+          secureTextEntry
+        />
+        
+        <TouchableOpacity style={styles.authButton} onPress={handleAuth} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.authButtonText}>
+              {isRegister ? '[ CREATE ACCOUNT ]' : '[ LOGIN ]'}
+            </Text>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => setIsRegister(!isRegister)}>
+          <Text style={styles.authToggle}>
+            {isRegister ? '>> ALREADY HAVE ACCOUNT? LOGIN' : '>> CREATE ACCOUNT'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
 
 // ============================================
 // HOME SCREEN - Alerts & Prices
@@ -129,18 +226,17 @@ function HomeScreen() {
 // ============================================
 // WALLETS SCREEN
 // ============================================
-function WalletsScreen() {
+function WalletsScreen({ token }: { token: string }) {
   const [wallets, setWallets] = useState<any[]>([]);
-  const [chains, setChains] = useState<string[]>([]);
   const [newAddress, setNewAddress] = useState('');
   const [newLabel, setNewLabel] = useState('');
   const [selectedChain, setSelectedChain] = useState('ethereum');
 
   const fetchWallets = async () => {
     try {
-      const res = await axios.get(`${API}/api/wallets`);
+      const endpoint = token ? '/api/user/wallets' : '/api/wallets';
+      const res = await axios.get(`${API}${endpoint}`, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       setWallets(res.data.wallets || []);
-      setChains(res.data.chains || []);
     } catch (e) {
       console.log('Error:', e);
     }
@@ -148,19 +244,21 @@ function WalletsScreen() {
 
   useEffect(() => {
     fetchWallets();
-  }, []);
+  }, [token]);
 
   const addWallet = async () => {
     if (!newAddress) return;
     try {
-      await axios.post(`${API}/api/wallets`, {
-        chain: selectedChain,
-        address: newAddress,
-        label: newLabel || newAddress,
-      });
-      setNewAddress('');
-      setNewLabel('');
-      fetchWallets();
+      const endpoint = token ? '/api/user/wallets' : '/api/wallets';
+      const res = token 
+        ? await axios.post(`${API}${endpoint}`, { chain: selectedChain, address: newAddress, label: newLabel || newAddress }, { headers: { Authorization: `Bearer ${token}` } })
+        : await axios.post(`${API}${endpoint}`, { chain: selectedChain, address: newAddress, label: newLabel || newAddress });
+      
+      if (res.data.success) {
+        setNewAddress('');
+        setNewLabel('');
+        fetchWallets();
+      }
     } catch (e) {
       Alert.alert('Error', 'Failed to add wallet');
     }
@@ -168,12 +266,18 @@ function WalletsScreen() {
 
   const removeWallet = async (chain: string, index: number) => {
     try {
-      await axios.delete(`${API}/api/wallets`, { data: { chain, index } });
-      fetchWallets();
+      const endpoint = token ? '/api/user/wallets' : '/api/wallets';
+      const res = token
+        ? await axios.delete(`${API}${endpoint}`, { data: { chain, index }, headers: { Authorization: `Bearer ${token}` } })
+        : await axios.delete(`${API}${endpoint}`, { data: { chain, index } });
+      
+      if (res.data.success) fetchWallets();
     } catch (e) {
       Alert.alert('Error', 'Failed to remove wallet');
     }
   };
+
+  const chains = ['ethereum', 'bitcoin', 'solana', 'base', 'arbitrum', 'avalanche', 'polygon', 'tron', 'bsc'];
 
   return (
     <ScrollView style={styles.container}>
@@ -184,15 +288,19 @@ function WalletsScreen() {
       {/* Add Wallet */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>ADD WALLET</Text>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.chainSelect}
-            value={selectedChain}
-            onChangeText={setSelectedChain}
-            placeholder="CHAIN"
-            placeholderTextColor="#666"
-          />
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+          {chains.map(chain => (
+            <TouchableOpacity 
+              key={chain} 
+              style={[styles.chainBtn, selectedChain === chain && styles.chainBtnActive]}
+              onPress={() => setSelectedChain(chain)}
+            >
+              <Text style={[styles.chainBtnText, selectedChain === chain && styles.chainBtnTextActive]}>
+                {chain.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
         <TextInput
           style={styles.input}
           value={newAddress}
@@ -237,9 +345,8 @@ function WalletsScreen() {
 // ============================================
 // SETTINGS SCREEN
 // ============================================
-function SettingsScreen() {
+function SettingsScreen({ onLogout, token, user }: { onLogout: () => void, token: string | null, user: any }) {
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [expoPushToken, setExpoPushToken] = useState('');
 
   useEffect(() => {
     registerForPush();
@@ -247,7 +354,6 @@ function SettingsScreen() {
 
   const registerForPush = async () => {
     if (!Device.isDevice) {
-      Alert.alert('Error', 'Must use physical device for push notifications');
       return;
     }
 
@@ -260,15 +366,10 @@ function SettingsScreen() {
     }
 
     if (finalStatus !== 'granted') {
-      Alert.alert('Error', 'Failed to get push token');
       return;
     }
 
     setPushEnabled(true);
-
-    const token = await Notifications.getExpoPushTokenAsync();
-    setExpoPushToken(token.data);
-    console.log('Push token:', token.data);
   };
 
   return (
@@ -276,6 +377,14 @@ function SettingsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>SETTINGS</Text>
       </View>
+
+      {token && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>ACCOUNT</Text>
+          <Text style={styles.infoText}>{user?.email}</Text>
+          <Text style={styles.infoText}>Plan: {user?.plan?.toUpperCase() || 'FREE'}</Text>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>NOTIFICATIONS</Text>
@@ -292,40 +401,174 @@ function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>APP INFO</Text>
-        <Text style={styles.infoText}>Whale Alert Terminal v1.0.0</Text>
+        <Text style={styles.infoText}>Whale Wink Terminal v1.0.0</Text>
         <Text style={styles.infoText}>React Native + Expo</Text>
       </View>
+
+      {token && (
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+            <Text style={styles.logoutButtonText}>[ LOGOUT ]</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
 // ============================================
-// NAVIGATION
+// MAIN APP
 // ============================================
 const Tab = createBottomTabNavigator();
 
+function MainApp({ token, user, onLogout }: { token: string | null, user: any, onLogout: () => void }) {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: '#00ff00',
+        tabBarInactiveTintColor: '#666',
+        headerStyle: styles.headerBar,
+        headerTintColor: '#00ff00',
+      }}
+    >
+      <Tab.Screen name="Home" options={{ title: 'DASHBOARD' }}>
+        {() => <HomeScreen />}
+      </Tab.Screen>
+      <Tab.Screen name="Wallets" options={{ title: 'WALLETS' }}>
+        {() => <WalletsScreen token={token} />}
+      </Tab.Screen>
+      <Tab.Screen name="Settings" options={{ title: 'SETTINGS' }}>
+        {() => <SettingsScreen onLogout={onLogout} token={token} user={user} />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
 export default function App() {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('authToken');
+      const storedEmail = await AsyncStorage.getItem('userEmail');
+      
+      if (storedToken) {
+        // Verify token still works
+        const res = await axios.get(`${API}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        });
+        
+        if (res.data.user) {
+          setToken(storedToken);
+          setUser(res.data.user);
+        } else {
+          // Token invalid, clear
+          await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('userEmail');
+        }
+      }
+    } catch (e) {
+      console.log('Auth check failed:', e);
+    }
+    setLoading(false);
+  };
+
+  const handleLogin = (newToken: string, newUser: any) => {
+    setToken(newToken);
+    setUser(newUser);
+  };
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.removeItem('userEmail');
+    setToken(null);
+    setUser(null);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00ff00" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: '#00ff00',
-          tabBarInactiveTintColor: '#666',
-          headerStyle: styles.headerBar,
-          headerTintColor: '#00ff00',
-        }}
-      >
-        <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'DASHBOARD' }} />
-        <Tab.Screen name="Wallets" component={WalletsScreen} />
-        <Tab.Screen name="Settings" component={SettingsScreen} />
-      </Tab.Navigator>
+      {token ? (
+        <MainApp token={token} user={user} onLogout={handleLogout} />
+      ) : (
+        <LoginScreen onLogin={handleLogin} />
+      )}
       <StatusBar style="light" />
     </NavigationContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  authContainer: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  authBox: {
+    padding: 30,
+    paddingTop: 80,
+  },
+  authTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#00ff00',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+  },
+  authSubtitle: {
+    fontSize: 14,
+    color: '#00aa00',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  input: {
+    backgroundColor: '#111',
+    borderWidth: 1,
+    borderColor: '#00ff00',
+    color: '#00ff00',
+    padding: 15,
+    marginBottom: 15,
+    fontFamily: 'monospace',
+    fontSize: 14,
+  },
+  authButton: {
+    backgroundColor: '#00ff00',
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  authButtonText: {
+    color: '#000',
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  authToggle: {
+    color: '#00aa00',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 12,
+  },
   container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
@@ -450,25 +693,26 @@ const styles = StyleSheet.create({
     color: '#00aa00',
     fontFamily: 'monospace',
   },
-  input: {
+  chainBtn: {
     backgroundColor: '#111',
     borderWidth: 1,
-    borderColor: '#00ff00',
-    color: '#00ff00',
-    padding: 12,
-    marginBottom: 10,
-    fontFamily: 'monospace',
+    borderColor: '#333',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
   },
-  inputRow: {
-    marginBottom: 10,
-  },
-  chainSelect: {
-    backgroundColor: '#111',
-    borderWidth: 1,
+  chainBtnActive: {
     borderColor: '#00ff00',
-    color: '#00ff00',
-    padding: 12,
+    backgroundColor: '#00ff00',
+  },
+  chainBtnText: {
+    color: '#666',
     fontFamily: 'monospace',
+    fontSize: 10,
+  },
+  chainBtnTextActive: {
+    color: '#000',
+    fontWeight: 'bold',
   },
   button: {
     backgroundColor: '#00ff00',
@@ -529,8 +773,18 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   infoText: {
-    color: '#666',
+    color: '#fff',
     fontFamily: 'monospace',
     marginBottom: 5,
+  },
+  logoutButton: {
+    backgroundColor: '#ff0000',
+    padding: 15,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
 });
