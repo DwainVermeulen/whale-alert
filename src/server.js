@@ -535,6 +535,11 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
     const result = auth.register(email, password, name);
     if (result.success) {
         analytics.track('registrations', email);
+        
+        // Notify admin on Telegram
+        if (bot && chatId) {
+            bot.sendMessage(chatId, `👤 <b>New User Registered!</b>\n\nEmail: ${email}\nName: ${name || 'N/A'}\nPlan: FREE`, { parse_mode: 'HTML' }).catch(() => {});
+        }
     }
     res.json(result);
 });
