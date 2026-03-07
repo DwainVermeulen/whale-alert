@@ -1096,7 +1096,7 @@ async function startMonitoring() {
         broadcast('prices', { prices, gas: gasPrices, sentiment: sentimentData });
     }, 30000);
 
-    const PORT = 3000;
+    const PORT = process.env.PORT || 3000;
     const server = http.createServer(app);
     initWebSocket(server);
     server.listen(PORT, () => {
