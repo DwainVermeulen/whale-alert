@@ -28,6 +28,30 @@ if (vapidPublicKey && vapidPrivateKey) {
 // Store push subscriptions (in memory - would use DB in production)
 const pushSubscriptions = [];
 
+// Plan limits configuration
+const PLAN_LIMITS = {
+    free: { wallets: 5, priceAlerts: 3 },
+    pro: { wallets: Infinity, priceAlerts: Infinity },
+    enterprise: { wallets: Infinity, priceAlerts: Infinity }
+};
+
+// Get user's current limits based on plan
+function getUserLimits(userData) {
+    const plan = userData.plan || 'free';
+    return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+}
+
+// Get current count of wallets
+function getUserWalletCount(userData) {
+    const wallets = userData.wallets || {};
+    return Object.values(wallets).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+}
+
+// Get current count of price alerts
+function getUserAlertCount(userData) {
+    return (userData.priceAlerts || []).length;
+}
+
 function sendPushNotification(subscription, payload) {
     if (!subscription || !vapidPublicKey) return;
     
@@ -617,6 +641,22 @@ app.post('/api/user/wallets', requireAuth, (req, res) => {
     }
     
     const userData = req.userData;
+    const limits = getUserLimits(userData);
+    const currentWallets = getUserWalletCount(userData);
+    
+    // Check wallet limit
+    if (currentWallets >= limits.wallets) {
+        return res.json({ 
+            success: false, 
+            error: `Wallet limit reached (${limits.wallets}). Upgrade to Pro for unlimited wallets.`,
+            limitReached: true,
+            current: currentWallets,
+            limit: limits.wallets,
+            upgradeRequired: true,
+            plan: userData.plan || 'free'
+        });
+    }
+    
     if (!userData.wallets) userData.wallets = JSON.parse(JSON.stringify(DEFAULT_WHALE_WALLETS));
     if (!userData.wallets[chain]) userData.wallets[chain] = [];
     
@@ -625,7 +665,7 @@ app.post('/api/user/wallets', requireAuth, (req, res) => {
     
     analytics.track('walletsAdded', req.userId, { action: 'add_wallet', chain });
     
-    res.json({ success: true, wallets: userData.wallets });
+    res.json({ success: true, wallets: userData.wallets, remaining: limits.wallets - currentWallets - 1 });
 });
 
 // Remove wallet
@@ -653,6 +693,21 @@ app.get('/api/user/price-alerts', requireAuth, (req, res) => {
 app.post('/api/user/price-alerts', requireAuth, (req, res) => {
     const { symbol, target, above } = req.body;
     const userData = req.userData;
+    const limits = getUserLimits(userData);
+    const currentAlerts = getUserAlertCount(userData);
+    
+    // Check price alert limit
+    if (currentAlerts >= limits.priceAlerts) {
+        return res.json({ 
+            success: false, 
+            error: `Price alert limit reached (${limits.priceAlerts}). Upgrade to Pro for unlimited alerts.`,
+            limitReached: true,
+            current: currentAlerts,
+            limit: limits.priceAlerts,
+            upgradeRequired: true,
+            plan: userData.plan || 'free'
+        });
+    }
     
     if (!userData.priceAlerts) userData.priceAlerts = [];
     userData.priceAlerts.push({ 
@@ -666,7 +721,7 @@ app.post('/api/user/price-alerts', requireAuth, (req, res) => {
     
     analytics.track('alertsCreated', req.userId, { action: 'create_alert', symbol });
     
-    res.json({ success: true, alerts: userData.priceAlerts });
+    res.json({ success: true, alerts: userData.priceAlerts, remaining: limits.priceAlerts - currentAlerts - 1 });
 });
 
 // Remove price alert
