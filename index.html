@@ -110,8 +110,13 @@
             text-transform: uppercase;
             letter-spacing: 4px;
         }
+
+        .logo img {
+            height: 50px;
+            vertical-align: middle;
+        }
         
-        .logo::before { content: '█ '; animation: blink 1s infinite; }
+        .logo-text::before { content: '█ '; animation: blink 1s infinite; }
         
         @keyframes blink {
             0%, 50% { opacity: 1; }
@@ -364,7 +369,7 @@
     <header>
         <div class="container">
             <nav>
-                <div class="logo">Whale Wink</div>
+                <div class="logo"><img src="logo.jpg" alt="Whale Wink"> <span class="logo-text">Whale Wink</span></div>
                 <div class="nav-links">
                     <a href="#features">Features</a>
                     <a href="#chains">Chains</a>
