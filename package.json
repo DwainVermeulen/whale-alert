@@ -4,7 +4,7 @@
   "description": "🐋 Whale Wink SaaS - Monitor crypto whales",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/server.js",
     "add-wallet": "node src/addWallet.js"
   },
   "dependencies": {
