@@ -171,8 +171,11 @@ async function handleWebhook(payload, signature) {
             case 'checkout.session.completed': {
                 const session = event.data.object;
                 console.log('Checkout completed:', session.id);
-                // Update user plan in database
-                // This would update the user's plan in users.json
+                const email = session.metadata?.userEmail;
+                const planId = session.metadata?.planId;
+                if (email && planId) {
+                    updateUserPlan(email, planId);
+                }
                 break;
             }
             case 'customer.subscription.updated': {
@@ -183,7 +186,6 @@ async function handleWebhook(payload, signature) {
             case 'customer.subscription.deleted': {
                 const subscription = event.data.object;
                 console.log('Subscription cancelled:', subscription.id);
-                // Downgrade user to free
                 break;
             }
             case 'invoice.payment_failed': {
@@ -193,9 +195,9 @@ async function handleWebhook(payload, signature) {
             }
         }
         
-        return { received: true };
+        return { received: true, event };
     } catch (e) {
-        return { error: e.message };
+        return { error: e.message, event: null };
     }
 }
 
@@ -214,6 +216,23 @@ async function verifySession(sessionId) {
     }
 }
 
+// Update user plan in database
+function updateUserPlan(email, plan) {
+    try {
+        const users = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'users.json'), 'utf8'));
+        if (users[email]) {
+            users[email].plan = plan;
+            require('fs').writeFileSync(require('path').join(__dirname, '..', 'users.json'), JSON.stringify(users, null, 2));
+            console.log(`✅ Updated user ${email} to plan: ${plan}`);
+            return true;
+        }
+        return false;
+    } catch (e) {
+        console.error('Error updating user plan:', e.message);
+        return false;
+    }
+}
+
 module.exports = {
     PLANS,
     getPlans,
@@ -221,5 +240,6 @@ module.exports = {
     createPortalSession,
     getSubscription,
     handleWebhook,
-    verifySession
+    verifySession,
+    updateUserPlan
 };
