@@ -300,6 +300,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(staticPath));
 
+// Explicit routes for public files
+app.get('/logo.jpg', (req, res) => {
+    const logoPath = path.join(staticPath, 'public', 'logo.jpg');
+    console.log('Logo path:', logoPath);
+    res.sendFile(logoPath);
+});
+
+app.get('/robots.txt', (req, res) => {
+    res.sendFile(path.join(staticPath, 'public', 'robots.txt'));
+});
+
 // ============================================
 // WEBSOCKET SERVER
 // ============================================
