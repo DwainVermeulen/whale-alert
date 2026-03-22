@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const LEMON_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
-const LEMON_CONFIGURED = !!LEMON_API_KEY;
+const LEMON_STORE_ID = process.env.LEMON_STORE_ID;
+const LEMON_CONFIGURED = !!LEMON_API_KEY && !!LEMON_STORE_ID;
 
 const lemon = LEMON_API_KEY ? axios.create({
     baseURL: 'https://api.lemonsqueezy.com/v1',
@@ -54,17 +55,18 @@ function getPlans() {
 
 // Create checkout session
 async function createCheckoutSession(userEmail, planId, successUrl, cancelUrl) {
-    if (!LEMON_CONFIGURED) {
-        return { success: false, error: 'Lemon Squeezy not configured. Add LEMON_SQUEEZY_API_KEY to .env' };
-    }
-    
+    return createSimpleCheckout(userEmail, planId, successUrl, cancelUrl);
+}
+
+// Simpler checkout - uses Lemon Squeezy hosted checkout URL
+async function createSimpleCheckout(userEmail, planId, successUrl, cancelUrl) {
     const plan = PLANS[planId];
     if (!plan || !plan.variantId) {
-        return { success: false, error: 'Invalid plan or variant not configured' };
+        return { success: false, error: 'Plan not configured' };
     }
     
     try {
-        // Create checkout via Lemon Squeezy
+        // Create checkout via Lemon Squeezy API
         const checkoutData = {
             data: {
                 type: "checkouts",
@@ -74,17 +76,15 @@ async function createCheckoutSession(userEmail, planId, successUrl, cancelUrl) {
                         custom: {
                             user_email: userEmail,
                             plan_id: planId
-                        }
-                    },
-                    preview: false,
-                    return_url: successUrl,
-                    cancel_url: cancelUrl
+                        },
+                        redirect_url: successUrl
+                    }
                 },
                 relationships: {
                     store: {
                         data: {
                             type: "stores",
-                            id: "get_from_your_lemon_squeezy_dashboard"
+                            id: LEMON_STORE_ID
                         }
                     },
                     variant: {
@@ -97,31 +97,19 @@ async function createCheckoutSession(userEmail, planId, successUrl, cancelUrl) {
             }
         };
         
-        // Note: You need your Store ID from Lemon Squeezy
-        // For now, return instructions
-        return { 
-            success: false, 
-            error: 'Please add your Lemon Squeezy Store ID to .env (LEMON_STORE_ID). You can find it in your store URL or API response.' 
-        };
+        const response = await lemon.post('/checkouts', checkoutData);
+        const checkoutUrl = response.data.data.attributes.url;
+        
+        return { success: true, url: checkoutUrl };
         
     } catch (e) {
-        console.log('Lemon Squeezy error:', e.message);
-        return { success: false, error: e.message };
+        console.log('Lemon Squeezy checkout error:', e.response?.data || e.message);
+        // Fallback to hosted checkout URL
+        const storeSlug = 'whale-wink';
+        const checkoutUrl = `https://${storeSlug}.lemonsqueezy.com/checkout/buy/${plan.variantId}?checkout[custom][user_email]=${encodeURIComponent(userEmail)}&checkout[custom][plan_id]=${planId}&checkout[redirect]=${encodeURIComponent(successUrl)}`;
+        
+        return { success: true, url: checkoutUrl };
     }
-}
-
-// Simpler checkout for now - returns a placeholder URL
-// Real implementation needs store ID from Lemon Squeezy
-async function createSimpleCheckout(userEmail, planId, successUrl, cancelUrl) {
-    const plan = PLANS[planId];
-    if (!plan || !plan.variantId) {
-        return { success: false, error: 'Plan not configured' };
-    }
-    
-    // Generate a simple checkout URL (Lemon Squeezy allows this)
-    const checkoutUrl = `https://my-store.lemonsqueezy.com/checkout/buy/${plan.variantId}?checkout[custom][user_email]=${encodeURIComponent(userEmail)}&checkout[custom][plan_id]=${planId}`;
-    
-    return { success: true, url: checkoutUrl };
 }
 
 // Get subscription status (mock for now)
