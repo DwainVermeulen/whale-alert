@@ -30,14 +30,49 @@ const pushSubscriptions = [];
 
 // Plan limits configuration
 const PLAN_LIMITS = {
-    free: { wallets: 5, priceAlerts: 3 },
-    pro: { wallets: Infinity, priceAlerts: Infinity },
-    enterprise: { wallets: Infinity, priceAlerts: Infinity }
+    free: { 
+        wallets: 5, 
+        priceAlerts: 3,
+        chains: ['ethereum', 'bitcoin', 'solana'],
+        history: 1 // days
+    },
+    pro: { 
+        wallets: 25, 
+        priceAlerts: Infinity,
+        chains: ['ethereum', 'bitcoin', 'solana', 'base', 'arbitrum', 'avalanche', 'polygon', 'tron', 'bnb'],
+        history: 30
+    },
+    deep: { 
+        wallets: 25, 
+        priceAlerts: Infinity,
+        chains: ['ethereum', 'bitcoin', 'solana', 'base', 'arbitrum', 'avalanche', 'polygon', 'tron', 'bnb'],
+        history: 30
+    },
+    enterprise: { 
+        wallets: 100, 
+        priceAlerts: Infinity,
+        chains: ['ethereum', 'bitcoin', 'solana', 'base', 'arbitrum', 'avalanche', 'polygon', 'tron', 'bnb'],
+        history: 90,
+        sms: true,
+        multiUser: 5,
+        csvExport: true
+    },
+    abyss: { 
+        wallets: 100, 
+        priceAlerts: Infinity,
+        chains: ['ethereum', 'bitcoin', 'solana', 'base', 'arbitrum', 'avalanche', 'polygon', 'tron', 'bnb'],
+        history: 90,
+        sms: true,
+        multiUser: 5,
+        csvExport: true
+    }
 };
 
 // Get user's current limits based on plan
 function getUserLimits(userData) {
-    const plan = userData.plan || 'free';
+    let plan = userData.plan || 'free';
+    // Map old plan names to new ones
+    if (plan === 'pro') plan = 'deep';
     return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
 }
 
@@ -659,7 +694,7 @@ app.post('/api/user/wallets', requireAuth, (req, res) => {
     if (currentWallets >= limits.wallets) {
         return res.json({ 
             success: false, 
-            error: `Wallet limit reached (${limits.wallets}). Upgrade to Pro for unlimited wallets.`,
+            error: `Wallet limit reached (${limits.wallets}). Upgrade to Deep Dive for more wallets.`,
             limitReached: true,
             current: currentWallets,
             limit: limits.wallets,
@@ -711,7 +746,7 @@ app.post('/api/user/price-alerts', requireAuth, (req, res) => {
     if (currentAlerts >= limits.priceAlerts) {
         return res.json({ 
             success: false, 
-            error: `Price alert limit reached (${limits.priceAlerts}). Upgrade to Pro for unlimited alerts.`,
+            error: `Price alert limit reached (${limits.priceAlerts}). Upgrade to Deep Dive for unlimited alerts.`,
             limitReached: true,
             current: currentAlerts,
             limit: limits.priceAlerts,
