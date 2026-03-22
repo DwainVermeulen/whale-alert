@@ -31,6 +31,10 @@ const templates = {
                         <td style="padding: 12px; border: 1px solid #cccccc;">${data.label}</td>
                     </tr>
                     <tr>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Action</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; font-weight: bold; color: ${data.action === 'In' ? '#00aa2a' : data.action === 'Out' ? '#ff4444' : '#666666'};">${data.action === 'In' ? 'PURCHASED' : data.action === 'Out' ? 'SOLD' : 'TRANSFER'}</td>
+                    </tr>
+                    <tr>
                         <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Amount</td>
                         <td style="padding: 12px; border: 1px solid #cccccc;">${data.amount}</td>
                     </tr>
