@@ -1014,13 +1014,17 @@
         }
         
         // Upgrade handlers
-        async function checkUpgrade(plan, btn) {
+        async function checkUpgrade(plan) {
+            console.log('checkUpgrade called with plan:', plan);
+            console.log('authToken:', authToken);
+            
             if (!authToken) {
+                alert('Please login or create account first');
                 showAuthModal();
                 return;
             }
             
-            if (!btn) btn = event.target;
+            const btn = event.target;
             btn.textContent = '[ PROCESSING... ]';
             btn.disabled = true;
             
@@ -1034,6 +1038,7 @@
                     body: JSON.stringify({ planId: plan })
                 });
                 const data = await res.json();
+                console.log('Checkout response:', data);
                 
                 if (data.success && data.url) {
                     window.location.href = data.url;
@@ -1043,7 +1048,7 @@
                     btn.disabled = false;
                 }
             } catch (e) {
-                alert('Connection error');
+                alert('Connection error: ' + e.message);
                 btn.textContent = '[ UPGRADE ]';
                 btn.disabled = false;
             }
