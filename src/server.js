@@ -911,7 +911,8 @@ app.post('/api/checkout', requireAuth, rateLimit({
     const successUrl = req.protocol + '://' + req.get('host') + '/dashboard.html?upgrade=success';
     const cancelUrl = req.protocol + '://' + req.get('host') + '/dashboard.html?upgrade=cancelled';
     
-    const result = await payments.createCheckoutSession(req.userId, planId, successUrl, cancelUrl);
+    // Use simple checkout for now
+    const result = await payments.createSimpleCheckout(req.userId, planId, successUrl, cancelUrl);
     res.json(result);
 });
 

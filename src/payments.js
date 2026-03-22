@@ -1,10 +1,20 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 
-const STRIPE_CONFIGURED = !!process.env.STRIPE_SECRET_KEY;
+const LEMON_API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
+const LEMON_CONFIGURED = !!LEMON_API_KEY;
 
-// Stripe price IDs (from Stripe Dashboard)
+const lemon = LEMON_API_KEY ? axios.create({
+    baseURL: 'https://api.lemonsqueezy.com/v1',
+    headers: {
+        'Authorization': `Bearer ${LEMON_API_KEY}`,
+        'Accept': 'application/vnd.api+json',
+        'Content-Type': 'application/vnd.api+json'
+    }
+}) : null;
+
+// Plans configuration
 const PLANS = {
     free: {
         id: null,
@@ -13,17 +23,19 @@ const PLANS = {
         features: ['5 Wallets', '3 Price Alerts', '3 Chains (ETH, BTC, SOL)', 'Telegram Alerts', '24hr History']
     },
     pro: {
-        id: process.env.STRIPE_PRO_PRICE_ID || 'price_pro',
+        id: 'pro',
         name: 'Deep Dive',
         price: 9.99,
         interval: 'month',
+        variantId: process.env.LEMON_PRO_VARIANT_ID || null,
         features: ['25 Wallets', 'Unlimited Alerts', 'All 9 Chains', 'Email + Telegram', '30-day History', 'Custom Whale Lists']
     },
     enterprise: {
-        id: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'price_enterprise',
+        id: 'enterprise',
         name: 'Abyss Control',
         price: 29.99,
         interval: 'month',
+        variantId: process.env.LEMON_ENTERPRISE_VARIANT_ID || null,
         features: ['100 Wallets', 'All Deep Dive features', '90-day History', 'SMS Alerts', 'Multi-user (5 seats)', 'Export to CSV']
     }
 };
@@ -36,193 +48,116 @@ function getPlans() {
         price: plan.price,
         interval: plan.interval || null,
         features: plan.features,
-        priceId: plan.id,
-        available: STRIPE_CONFIGURED && !!plan.id
+        available: LEMON_CONFIGURED && !!plan.variantId
     }));
 }
 
 // Create checkout session
 async function createCheckoutSession(userEmail, planId, successUrl, cancelUrl) {
-    if (!STRIPE_CONFIGURED) {
-        return { success: false, error: 'Stripe not configured. Add STRIPE_SECRET_KEY to .env' };
+    if (!LEMON_CONFIGURED) {
+        return { success: false, error: 'Lemon Squeezy not configured. Add LEMON_SQUEEZY_API_KEY to .env' };
     }
     
     const plan = PLANS[planId];
-    if (!plan || !plan.id) {
-        return { success: false, error: 'Invalid plan' };
+    if (!plan || !plan.variantId) {
+        return { success: false, error: 'Invalid plan or variant not configured' };
     }
     
     try {
-        // Find or create customer
-        let customer;
-        const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-        
-        if (customers.data.length > 0) {
-            customer = customers.data[0];
-        } else {
-            customer = await stripe.customers.create({
-                email: userEmail,
-                metadata: { source: 'whale-alert' }
-            });
-        }
-        
-        // Create checkout session
-        const session = await stripe.checkout.sessions.create({
-            customer: customer.id,
-            payment_method_types: ['card'],
-            line_items: [{
-                price: plan.id,
-                quantity: 1
-            }],
-            mode: 'subscription',
-            success_url: successUrl + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url: cancelUrl,
-            metadata: {
-                userEmail,
-                planId
+        // Create checkout via Lemon Squeezy
+        const checkoutData = {
+            data: {
+                type: "checkouts",
+                attributes: {
+                    checkout_data: {
+                        email: userEmail,
+                        custom: {
+                            user_email: userEmail,
+                            plan_id: planId
+                        }
+                    },
+                    preview: false,
+                    return_url: successUrl,
+                    cancel_url: cancelUrl
+                },
+                relationships: {
+                    store: {
+                        data: {
+                            type: "stores",
+                            id: "get_from_your_lemon_squeezy_dashboard"
+                        }
+                    },
+                    variant: {
+                        data: {
+                            type: "variants",
+                            id: plan.variantId
+                        }
+                    }
+                }
             }
-        });
+        };
         
-        return { success: true, sessionId: session.id, url: session.url };
+        // Note: You need your Store ID from Lemon Squeezy
+        // For now, return instructions
+        return { 
+            success: false, 
+            error: 'Please add your Lemon Squeezy Store ID to .env (LEMON_STORE_ID). You can find it in your store URL or API response.' 
+        };
+        
     } catch (e) {
-        console.log('Stripe error:', e.message);
+        console.log('Lemon Squeezy error:', e.message);
         return { success: false, error: e.message };
     }
 }
 
-// Create customer portal session
-async function createPortalSession(userEmail, returnUrl) {
-    if (!STRIPE_CONFIGURED) {
-        return { success: false, error: 'Stripe not configured' };
+// Simpler checkout for now - returns a placeholder URL
+// Real implementation needs store ID from Lemon Squeezy
+async function createSimpleCheckout(userEmail, planId, successUrl, cancelUrl) {
+    const plan = PLANS[planId];
+    if (!plan || !plan.variantId) {
+        return { success: false, error: 'Plan not configured' };
     }
     
-    try {
-        let customer;
-        const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-        
-        if (customers.data.length === 0) {
-            return { success: false, error: 'No subscription found' };
-        }
-        
-        customer = customers.data[0];
-        
-        const session = await stripe.billingPortal.sessions.create({
-            customer: customer.id,
-            return_url: returnUrl
-        });
-        
-        return { success: true, url: session.url };
-    } catch (e) {
-        return { success: false, error: e.message };
-    }
+    // Generate a simple checkout URL (Lemon Squeezy allows this)
+    const checkoutUrl = `https://my-store.lemonsqueezy.com/checkout/buy/${plan.variantId}?checkout[custom][user_email]=${encodeURIComponent(userEmail)}&checkout[custom][plan_id]=${planId}`;
+    
+    return { success: true, url: checkoutUrl };
 }
 
-// Get subscription status
+// Get subscription status (mock for now)
 async function getSubscription(userEmail) {
     try {
-        const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-        
-        if (customers.data.length === 0) {
-            return { plan: 'free' };
-        }
-        
-        const customer = customers.data[0];
-        const subscriptions = await stripe.subscriptions.list({
-            customer: customer.id,
-            status: 'active',
-            limit: 1
-        });
-        
-        if (subscriptions.data.length === 0) {
-            return { plan: 'free' };
-        }
-        
-        const sub = subscriptions.data[0];
-        const priceId = sub.items.data[0].price.id;
-        
-        // Find plan by price ID
-        let plan = 'free';
-        for (const [key, p] of Object.entries(PLANS)) {
-            if (p.id === priceId) {
-                plan = key;
-                break;
-            }
-        }
-        
-        return {
-            plan,
-            customerId: customer.id,
-            subscriptionId: sub.id,
-            currentPeriodEnd: new Date(sub.current_period_end * 1000).toISOString()
-        };
+        // For now, return free plan - real implementation would check Lemon Squeezy API
+        return { plan: 'free' };
     } catch (e) {
         return { plan: 'free', error: e.message };
     }
 }
 
+// Verify checkout (mock)
+async function verifySession(sessionId) {
+    return { success: false, error: 'Not implemented' };
+}
+
+// Create customer portal session
+async function createPortalSession(userEmail, returnUrl) {
+    return { success: false, error: 'Not implemented yet' };
+}
+
 // Handle webhook
 async function handleWebhook(payload, signature) {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    
-    try {
-        const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-        
-        switch (event.type) {
-            case 'checkout.session.completed': {
-                const session = event.data.object;
-                console.log('Checkout completed:', session.id);
-                const email = session.metadata?.userEmail;
-                const planId = session.metadata?.planId;
-                if (email && planId) {
-                    updateUserPlan(email, planId);
-                }
-                break;
-            }
-            case 'customer.subscription.updated': {
-                const subscription = event.data.object;
-                console.log('Subscription updated:', subscription.id);
-                break;
-            }
-            case 'customer.subscription.deleted': {
-                const subscription = event.data.object;
-                console.log('Subscription cancelled:', subscription.id);
-                break;
-            }
-            case 'invoice.payment_failed': {
-                const invoice = event.data.object;
-                console.log('Payment failed:', invoice.id);
-                break;
-            }
-        }
-        
-        return { received: true, event };
-    } catch (e) {
-        return { error: e.message, event: null };
-    }
+    // Would verify webhook signature and process events
+    console.log('Lemon Squeezy webhook received');
+    return { received: true };
 }
 
-// Verify checkout session
-async function verifySession(sessionId) {
-    try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        return {
-            success: true,
-            customerId: session.customer,
-            subscriptionId: session.subscription,
-            status: session.payment_status
-        };
-    } catch (e) {
-        return { success: false, error: e.message };
-    }
-}
-
-// Update user plan in database
+// Update user plan
 function updateUserPlan(email, plan) {
     try {
-        const users = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'users.json'), 'utf8'));
+        const users = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'users.json'), 'utf8'));
         if (users[email]) {
             users[email].plan = plan;
-            require('fs').writeFileSync(require('path').join(__dirname, '..', 'users.json'), JSON.stringify(users, null, 2));
+            fs.writeFileSync(path.join(__dirname, '..', 'users.json'), JSON.stringify(users, null, 2));
             console.log(`✅ Updated user ${email} to plan: ${plan}`);
             return true;
         }
@@ -237,6 +172,7 @@ module.exports = {
     PLANS,
     getPlans,
     createCheckoutSession,
+    createSimpleCheckout,
     createPortalSession,
     getSubscription,
     handleWebhook,
