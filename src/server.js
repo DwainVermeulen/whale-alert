@@ -11,8 +11,6 @@ const auth = require('./auth');
 const payments = require('./payments');
 const analytics = require('./analytics');
 const emails = require('./emails');
-const Database = require('better-sqlite3');
-const db = new Database(path.join(__dirname, '..', 'users.db'));
 
 // Web Push configuration
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
