@@ -971,10 +971,14 @@ app.get('/api/analytics/me', requireAuth, (req, res) => {
     res.json(userAnalytics || { message: 'No activity yet' });
 });
 
-// Stripe webhook (no auth - from Stripe)
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const signature = req.headers['stripe-signature'];
-    const result = await payments.handleWebhook(req.body, signature);
+// Lemon Squeezy webhook (no auth - from Lemon Squeezy)
+app.post('/api/webhook', express.json(), async (req, res) => {
+    const eventName = req.body.meta.event_name;
+    const payload = req.body.data.attributes || req.body;
+    
+    console.log('Webhook received:', eventName);
+    
+    const result = await payments.handleWebhook(eventName, payload);
     res.json(result);
 });
 

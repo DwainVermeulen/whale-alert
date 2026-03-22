@@ -133,10 +133,58 @@ async function createPortalSession(userEmail, returnUrl) {
 }
 
 // Handle webhook
-async function handleWebhook(payload, signature) {
-    // Would verify webhook signature and process events
-    console.log('Lemon Squeezy webhook received');
-    return { received: true };
+async function handleWebhook(eventName, payload) {
+    console.log('Lemon Squeezy webhook:', eventName);
+    
+    try {
+        switch (eventName) {
+            case 'subscription_created':
+            case 'subscription_updated': {
+                const { custom_data, customer_email, status } = payload;
+                const email = custom_data?.user_email || customer_email;
+                const planId = custom_data?.plan_id;
+                
+                if (email && planId && status === 'active') {
+                    updateUserPlan(email, planId);
+                    console.log(`✅ Subscription activated for ${email}: ${planId}`);
+                }
+                break;
+            }
+            
+            case 'subscription_cancelled':
+            case 'subscription_expired': {
+                const { custom_data, customer_email } = payload;
+                const email = custom_data?.user_email || customer_email;
+                
+                if (email) {
+                    updateUserPlan(email, 'free');
+                    console.log(`✅ Subscription cancelled for ${email}: reverted to free`);
+                }
+                break;
+            }
+            
+            case 'order_created': {
+                // New purchase
+                const { custom_data, customer_email } = payload;
+                const email = custom_data?.user_email || customer_email;
+                const planId = custom_data?.plan_id;
+                
+                if (email && planId) {
+                    updateUserPlan(email, planId);
+                    console.log(`✅ Order processed for ${email}: ${planId}`);
+                }
+                break;
+            }
+            
+            default:
+                console.log('Unhandled webhook event:', eventName);
+        }
+        
+        return { received: true };
+    } catch (e) {
+        console.error('Webhook error:', e.message);
+        return { error: e.message };
+    }
 }
 
 // Update user plan
