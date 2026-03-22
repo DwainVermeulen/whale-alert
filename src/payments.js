@@ -28,7 +28,7 @@ const PLANS = {
         name: 'Deep Dive',
         price: 9.99,
         interval: 'month',
-        variantId: process.env.LEMON_PRO_VARIANT_ID || null,
+        variantId: process.env.LEMON_PRO_VARIANT_ID || '1432426',
         features: ['25 Wallets', 'Unlimited Alerts', 'All 9 Chains', 'Email + Telegram', '30-day History', 'Custom Whale Lists']
     },
     enterprise: {
@@ -36,7 +36,7 @@ const PLANS = {
         name: 'Abyss Control',
         price: 29.99,
         interval: 'month',
-        variantId: process.env.LEMON_ENTERPRISE_VARIANT_ID || null,
+        variantId: process.env.LEMON_ENTERPRISE_VARIANT_ID || '1432437',
         features: ['100 Wallets', 'All Deep Dive features', '90-day History', 'SMS Alerts', 'Multi-user (5 seats)', 'Export to CSV']
     }
 };
