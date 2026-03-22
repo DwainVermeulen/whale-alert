@@ -190,14 +190,14 @@ async function handleWebhook(eventName, payload) {
 // Update user plan
 function updateUserPlan(email, plan) {
     try {
-        const users = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'users.json'), 'utf8'));
-        if (users[email]) {
-            users[email].plan = plan;
-            fs.writeFileSync(path.join(__dirname, '..', 'users.json'), JSON.stringify(users, null, 2));
-            console.log(`✅ Updated user ${email} to plan: ${plan}`);
-            return true;
-        }
-        return false;
+        // Map plan names
+        let mappedPlan = plan;
+        if (plan === 'pro') mappedPlan = 'deep';
+        if (plan === 'enterprise') mappedPlan = 'abyss';
+        
+        // Use auth module to update
+        const auth = require('./auth');
+        return auth.updateUserPlan(email, mappedPlan);
     } catch (e) {
         console.error('Error updating user plan:', e.message);
         return false;

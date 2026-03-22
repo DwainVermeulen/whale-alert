@@ -1,10 +1,55 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const fs = require('fs');
+const sqlite3 = require('better-sqlite3');
 const path = require('path');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'whale-alert-secret-key-change-in-production';
-const USERS_FILE = path.join(__dirname, '..', 'users.json');
+const DB_PATH = path.join(__dirname, '..', 'users.db');
+
+// Initialize database
+const db = new sqlite3(DB_PATH);
+
+// Create tables if not exist
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        email TEXT PRIMARY KEY,
+        password TEXT NOT NULL,
+        name TEXT,
+        plan TEXT DEFAULT 'free',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE TABLE IF NOT EXISTS user_wallets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        chain TEXT NOT NULL,
+        address TEXT NOT NULL,
+        label TEXT,
+        FOREIGN KEY (email) REFERENCES users(email)
+    );
+    
+    CREATE TABLE IF NOT EXISTS user_price_alerts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        symbol TEXT NOT NULL,
+        target REAL NOT NULL,
+        above INTEGER NOT NULL,
+        active INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (email) REFERENCES users(email)
+    );
+    
+    CREATE TABLE IF NOT EXISTS user_settings (
+        email TEXT PRIMARY KEY,
+        telegram_bot_token TEXT,
+        telegram_chat_id TEXT,
+        custom_keys TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (email) REFERENCES users(email)
+    );
+`);
 
 // Default user data structure
 const defaultUserData = {
@@ -14,29 +59,6 @@ const defaultUserData = {
     customApiKeys: { coingecko: '', etherscan: '' },
     priceAlertsConfig: []
 };
-
-// Load users from file
-function loadUsers() {
-    try {
-        if (fs.existsSync(USERS_FILE)) {
-            return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-        }
-    } catch (e) {
-        console.log('⚠️ Error loading users:', e.message);
-    }
-    return {};
-}
-
-// Save users to file
-function saveUsers(users) {
-    try {
-        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-    } catch (e) {
-        console.log('⚠️ Error saving users:', e.message);
-    }
-}
-
-let users = loadUsers();
 
 // Generate JWT token
 function generateToken(userId) {
@@ -54,28 +76,37 @@ function verifyToken(token) {
 
 // Register new user
 function register(email, password, name = '') {
-    if (users[email]) {
+    const existing = db.prepare('SELECT email FROM users WHERE email = ?').get(email);
+    if (existing) {
         return { success: false, error: 'Email already registered' };
     }
     
     const hashedPassword = bcrypt.hashSync(password, 10);
-    users[email] = {
-        password: hashedPassword,
-        name: name || email.split('@')[0],
-        createdAt: new Date().toISOString(),
-        plan: 'free', // free, pro, enterprise
-        ...JSON.parse(JSON.stringify(defaultUserData))
-    };
+    const userName = name || email.split('@')[0];
     
-    saveUsers(users);
-    
-    const token = generateToken(email);
-    return { success: true, token, user: { email, name: users[email].name, plan: 'free' } };
+    try {
+        db.prepare(`
+            INSERT INTO users (email, password, name, plan)
+            VALUES (?, ?, ?, 'free')
+        `).run(email, hashedPassword, userName);
+        
+        // Initialize empty settings
+        db.prepare(`
+            INSERT INTO user_settings (email, custom_keys)
+            VALUES (?, '{}')
+        `).run(email);
+        
+        const token = generateToken(email);
+        return { success: true, token, user: { email, name: userName, plan: 'free' } };
+    } catch (e) {
+        console.error('Registration error:', e.message);
+        return { success: false, error: 'Registration failed' };
+    }
 }
 
 // Login user
 function login(email, password) {
-    const user = users[email];
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) {
         return { success: false, error: 'Invalid email or password' };
     }
@@ -98,30 +129,87 @@ function login(email, password) {
 
 // Get user data (without password)
 function getUser(email) {
-    const user = users[email];
+    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) return null;
     
     const { password, ...userData } = user;
     return userData;
 }
 
-// Update user data
+// Get full user data with wallets and alerts
+function getFullUserData(email) {
+    const user = getUser(email);
+    if (!user) return null;
+    
+    const wallets = db.prepare('SELECT * FROM user_wallets WHERE email = ?').all(email);
+    const priceAlerts = db.prepare('SELECT * FROM user_price_alerts WHERE email = ?').all(email);
+    const settings = db.prepare('SELECT * FROM user_settings WHERE email = ?').get(email);
+    
+    // Convert wallets to chain-based format
+    const walletsByChain = {};
+    for (const w of wallets) {
+        if (!walletsByChain[w.chain]) walletsByChain[w.chain] = [];
+        walletsByChain[w.chain].push({ address: w.address, label: w.label });
+    }
+    
+    // Convert price alerts
+    const alerts = priceAlerts.map(a => ({
+        id: a.id,
+        symbol: a.symbol,
+        target: a.target,
+        above: !!a.above,
+        active: !!a.active
+    }));
+    
+    return {
+        ...user,
+        wallets: walletsByChain,
+        priceAlerts: alerts,
+        telegram: {
+            botToken: settings?.telegram_bot_token || '',
+            chatId: settings?.telegram_chat_id || ''
+        },
+        customApiKeys: settings?.custom_keys ? JSON.parse(settings.custom_keys) : { coingecko: '', etherscan: '' }
+    };
+}
+
+// Update user
 function updateUser(email, data) {
-    if (!users[email]) return false;
-    
-    // Don't allow direct password overwrite (use separate function)
+    // Don't allow direct password overwrite or plan change via this
     delete data.password;
-    delete data.email;
     delete data.plan;
+    delete data.email;
     
-    users[email] = { ...users[email], ...data };
-    saveUsers(users);
-    return true;
+    const fields = Object.keys(data);
+    if (fields.length === 0) return true;
+    
+    const setClause = fields.map(f => `${f} = ?`).join(', ');
+    const values = fields.map(f => data[f]);
+    
+    try {
+        db.prepare(`UPDATE users SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE email = ?`).run(...values, email);
+        return true;
+    } catch (e) {
+        console.error('Update user error:', e.message);
+        return false;
+    }
+}
+
+// Update user plan (called from webhook)
+function updateUserPlan(email, plan) {
+    try {
+        db.prepare('UPDATE users SET plan = ?, updated_at = CURRENT_TIMESTAMP WHERE email = ?').run(plan, email);
+        console.log(`✅ Updated ${email} to plan: ${plan}`);
+        return true;
+    } catch (e) {
+        console.error('Update plan error:', e.message);
+        return false;
+    }
 }
 
 // Change password
 function changePassword(email, oldPassword, newPassword) {
-    const user = users[email];
+    const user = db.prepare('SELECT password FROM users WHERE email = ?').get(email);
     if (!user) {
         return { success: false, error: 'User not found' };
     }
@@ -130,41 +218,65 @@ function changePassword(email, oldPassword, newPassword) {
         return { success: false, error: 'Current password is incorrect' };
     }
     
-    users[email].password = bcrypt.hashSync(newPassword, 10);
-    saveUsers(users);
-    return { success: true };
-}
-
-// Get user-specific data file path
-function getUserDataFile(email) {
-    const userDir = path.join(__dirname, '..', 'userdata');
-    if (!fs.existsSync(userDir)) {
-        fs.mkdirSync(userDir, { recursive: true });
-    }
-    return path.join(userDir, `${email.replace(/[^a-z0-9]/gi, '_')}.json`);
-}
-
-// Load user-specific data
-function loadUserData(email) {
-    const filePath = getUserDataFile(email);
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
     try {
-        if (fs.existsSync(filePath)) {
-            return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        }
+        db.prepare('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE email = ?').run(hashedPassword, email);
+        return { success: true };
     } catch (e) {
-        console.log('⚠️ Error loading user data:', e.message);
+        return { success: false, error: 'Password change failed' };
     }
-    return JSON.parse(JSON.stringify(defaultUserData));
 }
 
-// Save user-specific data
+// Save user data (wallets, alerts, settings)
 function saveUserData(email, data) {
-    const filePath = getUserDataFile(email);
     try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+        // Save wallets
+        if (data.wallets) {
+            db.prepare('DELETE FROM user_wallets WHERE email = ?').run(email);
+            const insertWallet = db.prepare('INSERT INTO user_wallets (email, chain, address, label) VALUES (?, ?, ?, ?)');
+            for (const [chain, wallets] of Object.entries(data.wallets)) {
+                for (const w of wallets) {
+                    insertWallet.run(email, chain, w.address, w.label);
+                }
+            }
+        }
+        
+        // Save price alerts
+        if (data.priceAlerts) {
+            db.prepare('DELETE FROM user_price_alerts WHERE email = ?').run(email);
+            const insertAlert = db.prepare('INSERT INTO user_price_alerts (email, symbol, target, above, active) VALUES (?, ?, ?, ?, ?)');
+            for (const a of data.priceAlerts) {
+                insertAlert.run(email, a.symbol, a.target, a.above ? 1 : 0, a.active !== false ? 1 : 0);
+            }
+        }
+        
+        // Save settings
+        if (data.telegram || data.customApiKeys) {
+            const current = db.prepare('SELECT * FROM user_settings WHERE email = ?').get(email) || {};
+            const telegram = data.telegram || { botToken: current.telegram_bot_token, chatId: current.telegram_chat_id };
+            const customKeys = data.customApiKeys ? JSON.stringify(data.customApiKeys) : current.custom_keys || '{}';
+            
+            db.prepare(`
+                INSERT INTO user_settings (email, telegram_bot_token, telegram_chat_id, custom_keys, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(email) DO UPDATE SET
+                    telegram_bot_token = excluded.telegram_bot_token,
+                    telegram_chat_id = excluded.telegram_chat_id,
+                    custom_keys = excluded.custom_keys,
+                    updated_at = CURRENT_TIMESTAMP
+            `).run(email, telegram.botToken, telegram.chatId, customKeys);
+        }
+        
+        return true;
     } catch (e) {
-        console.log('⚠️ Error saving user data:', e.message);
+        console.error('Save user data error:', e.message);
+        return false;
     }
+}
+
+// Load user data
+function loadUserData(email) {
+    return getFullUserData(email) || { ...defaultUserData, email };
 }
 
 module.exports = {
@@ -172,7 +284,9 @@ module.exports = {
     login,
     verifyToken,
     getUser,
+    getFullUserData,
     updateUser,
+    updateUserPlan,
     changePassword,
     loadUserData,
     saveUserData,
