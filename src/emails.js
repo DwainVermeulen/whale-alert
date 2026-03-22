@@ -19,37 +19,36 @@ const templates = {
     whaleAlert: (data) => ({
         subject: `Whale Alert - ${data.chain} | ${data.label}`,
         html: `
-            <div style="font-family: 'Courier New', monospace; background: #0a0a0a; color: #00FF41; padding: 20px; max-width: 600px; margin: 0 auto;">
-                <h2 style="border-bottom: 2px solid #00FF41; padding-bottom: 10px;">WHALE ALERT</h2>
-                <table style="width: 100%; border-collapse: collapse;">
+            <div style="font-family: 'Courier New', monospace; background: #ffffff; color: #333333; padding: 20px; max-width: 600px; margin: 0 auto; border: 2px solid #00FF41;">
+                <h2 style="border-bottom: 2px solid #00FF41; padding-bottom: 10px; color: #00aa2a;">🐋 WHALE ALERT</h2>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">Chain</td>
-                        <td style="padding: 10px; border: 1px solid #00FF41; font-weight: bold;">${data.chain}</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Chain</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc;">${data.chain}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">Label</td>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">${data.label}</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Label</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc;">${data.label}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">Amount</td>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">${data.amount}</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Amount</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc;">${data.amount}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">USD Value</td>
-                        <td style="padding: 10px; border: 1px solid #00FF41; font-weight: bold;">$${data.usd.toLocaleString()}</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">USD Value</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; font-weight: bold; color: #00aa2a;">$${data.usd.toLocaleString()}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">Address</td>
-                        <td style="padding: 10px; border: 1px solid #00FF41; font-size: 12px;">${data.address}</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Address</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; font-size: 11px; font-family: monospace;">${data.address}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">Time</td>
-                        <td style="padding: 10px; border: 1px solid #00FF41;">${new Date(data.time).toLocaleString()}</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc; background: #f5f5f5; font-weight: bold;">Time</td>
+                        <td style="padding: 12px; border: 1px solid #cccccc;">${new Date(data.time).toLocaleString()}</td>
                     </tr>
                 </table>
-                <p style="margin-top: 20px; font-size: 12px; color: #00aa2a;">
-                    Sent by Whale Wink<br>
-                    <a href="https://whalewink.net" style="color: #00FF41;">https://whalewink.net</a>
+                <p style="margin-top: 20px; font-size: 12px; color: #666666;">
+                    Sent by <a href="https://whalewink.net" style="color: #00aa2a;">Whale Wink</a>
                 </p>
             </div>
         `,
@@ -70,8 +69,8 @@ Sent by Whale Wink
     priceAlert: (data) => ({
         subject: `Price Alert - ${data.symbol} ${data.above ? 'ABOVE' : 'BELOW'} $${data.target}`,
         html: `
-            <div style="font-family: 'Courier New', monospace; background: #0a0a0a; color: #00FF41; padding: 20px; max-width: 600px; margin: 0 auto;">
-                <h2 style="border-bottom: 2px solid #00FF41; padding-bottom: 10px;">PRICE ALERT</h2>
+            <div style="font-family: 'Courier New', monospace; background: #ffffff; color: #333333; padding: 20px; max-width: 600px; margin: 0 auto;">
+                <h2 style="border-bottom: 2px solid #00FF41; padding-bottom: 10px; color: #00aa2a;">🔔 PRICE ALERT</h2>
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 10px; border: 1px solid #00FF41;">Symbol</td>
@@ -111,7 +110,7 @@ Sent by Whale Wink
     welcome: (data) => ({
         subject: 'Welcome to Whale Wink!',
         html: `
-            <div style="font-family: 'Courier New', monospace; background: #0a0a0a; color: #00FF41; padding: 20px; max-width: 600px; margin: 0 auto;">
+            <div style="font-family: 'Courier New', monospace; background: #ffffff; color: #333333; padding: 20px; max-width: 600px; margin: 0 auto;">
                 <h2 style="border-bottom: 2px solid #00FF41; padding-bottom: 10px;">WELCOME TO WHALE WINK</h2>
                 <p>Hi ${data.name || 'there'},</p>
                 <p>Welcome to Whale Wink - your crypto whale monitoring solution!</p>
