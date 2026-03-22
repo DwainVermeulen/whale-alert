@@ -59,7 +59,7 @@ const templates = {
                 </table>
                 <p style="margin-top: 20px; font-size: 12px; color: #00aa2a;">
                     Sent by Whale Alert Terminal<br>
-                    <a href="#" style="color: #00FF41;">https://whale-alert.com</a>
+                    <a href="#" style="color: #00FF41;">https://whalewink.net</a>
                 </p>
             </div>
         `,
@@ -102,7 +102,7 @@ Sent by Whale Alert Terminal
                 </table>
                 <p style="margin-top: 20px; font-size: 12px; color: #00aa2a;">
                     Sent by Whale Alert Terminal<br>
-                    <a href="#" style="color: #00FF41;">https://whale-alert.com</a>
+                    <a href="#" style="color: #00FF41;">https://whalewink.net</a>
                 </p>
             </div>
         `,
@@ -137,7 +137,7 @@ Sent by Whale Alert Terminal
                 </p>
                 <p style="margin-top: 20px; font-size: 12px; color: #00aa2a;">
                     Sent by Whale Alert Terminal<br>
-                    <a href="#" style="color: #00FF41;">https://whale-alert.com</a>
+                    <a href="#" style="color: #00FF41;">https://whalewink.net</a>
                 </p>
             </div>
         `,
@@ -154,7 +154,7 @@ Getting Started:
 - Connect Telegram for instant notifications
 - Upgrade to Pro for unlimited features
 
-Go to Dashboard: https://whale-alert.com
+Go to Dashboard: https://whalewink.net
 
 Sent by Whale Alert Terminal
         `
@@ -176,7 +176,7 @@ async function sendEmail(to, template, data) {
         const content = templates[template](data);
         
         const info = await transporter.sendMail({
-            from: process.env.SMTP_FROM || '"Whale Alert" <noreply@whale-alert.com>',
+            from: process.env.SMTP_FROM || '"Whale Alert" <noreply@whalewink.net>',
             to,
             subject: content.subject,
             html: content.html,

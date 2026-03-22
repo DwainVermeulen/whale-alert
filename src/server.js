@@ -11,6 +11,8 @@ const auth = require('./auth');
 const payments = require('./payments');
 const analytics = require('./analytics');
 const emails = require('./emails');
+const Database = require('better-sqlite3');
+const db = new Database(path.join(__dirname, '..', 'users.db'));
 
 // Web Push configuration
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -1261,8 +1263,23 @@ function addAlert(data) {
     };
     broadcastPushNotification(pushPayload);
     
+    // Send Telegram notification
     if (bot && chatId) {
         bot.sendMessage(chatId, `🐋 <b>Whale Alert</b>\n\n<b>${data.chain}</b> - ${data.label}\n${data.amount} ($${data.usd.toLocaleString()})`, { parse_mode: 'HTML' }).catch(() => {});
+    }
+    
+    // Send email notifications to all users with email enabled (Deep Dive + Abyss)
+    // In production, you'd have per-user settings for this
+    if (emails.EMAIL_ENABLED) {
+        // Get users on paid plans who want email notifications
+        try {
+            const paidUsers = db.prepare("SELECT email FROM users WHERE plan IN ('deep', 'abyss')").all();
+            for (const user of paidUsers) {
+                emails.sendWhaleAlert(user.email, alert).catch(() => {});
+            }
+        } catch (e) {
+            console.log('Email notification error:', e.message);
+        }
     }
 }
 
