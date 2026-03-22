@@ -8,23 +8,23 @@ const STRIPE_CONFIGURED = !!process.env.STRIPE_SECRET_KEY;
 const PLANS = {
     free: {
         id: null,
-        name: 'Free',
+        name: 'Surface Scan',
         price: 0,
-        features: ['5 Wallets', '3 Price Alerts', 'All Chains', 'Telegram Alerts']
+        features: ['5 Wallets', '3 Price Alerts', '3 Chains (ETH, BTC, SOL)', 'Telegram Alerts', '24hr History']
     },
     pro: {
         id: process.env.STRIPE_PRO_PRICE_ID || 'price_pro',
-        name: 'Pro',
+        name: 'Deep Dive',
         price: 9.99,
         interval: 'month',
-        features: ['Unlimited Wallets', 'Unlimited Alerts', 'Custom API Keys', 'Priority Support']
+        features: ['25 Wallets', 'Unlimited Alerts', 'All 9 Chains', 'Email + Telegram', '30-day History', 'Custom Whale Lists']
     },
     enterprise: {
         id: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'price_enterprise',
-        name: 'Enterprise',
-        price: 49.99,
+        name: 'Abyss Control',
+        price: 29.99,
         interval: 'month',
-        features: ['Everything in Pro', 'API Access', 'White-label', 'Dedicated Support']
+        features: ['100 Wallets', 'All Deep Dive features', '90-day History', 'SMS Alerts', 'Multi-user (5 seats)', 'Export to CSV']
     }
 };
 

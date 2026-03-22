@@ -1014,13 +1014,39 @@
         }
         
         // Upgrade handlers
-        function checkUpgrade(plan) {
+        async function checkUpgrade(plan) {
             if (!authToken) {
                 showAuthModal();
                 return;
             }
-            // Redirect to Stripe checkout or show upgrade modal
-            alert('Stripe integration coming soon!');
+            
+            const btn = event.target;
+            btn.textContent = '[ PROCESSING... ]';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ planId: plan })
+                });
+                const data = await res.json();
+                
+                if (data.success && data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert('Checkout error: ' + (data.error || 'Unknown error'));
+                    btn.textContent = '[ UPGRADE ]';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Connection error');
+                btn.textContent = '[ UPGRADE ]';
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
