@@ -1014,13 +1014,13 @@
         }
         
         // Upgrade handlers
-        async function checkUpgrade(plan) {
+        async function checkUpgrade(plan, btn) {
             if (!authToken) {
                 showAuthModal();
                 return;
             }
             
-            const btn = event.target;
+            if (!btn) btn = event.target;
             btn.textContent = '[ PROCESSING... ]';
             btn.disabled = true;
             
