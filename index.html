@@ -508,11 +508,18 @@
         .faq-answer {
             color: var(--phosphor-dim);
             font-size: 15px;
-            display: none;
+            display: block;
+            padding-top: 10px;
         }
         
-        .faq-item.active .faq-answer {
-            display: block;
+        .faq-question::after {
+            content: ' ▼';
+            font-size: 12px;
+            opacity: 0.5;
+        }
+        
+        .faq-item.active .faq-question::after {
+            content: ' ▲';
         }
         
         /* Pricing */
