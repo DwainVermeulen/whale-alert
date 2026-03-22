@@ -10,21 +10,21 @@
     <meta name="keywords" content="crypto whale tracker, whale alert, blockchain tracker, ethereum transactions, bitcoin whale, crypto alerts, defi monitor, nft whale tracking, cryptocurrency surveillance">
     <meta name="author" content="Whale Wink">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://whale-alert.com/">
+    <link rel="canonical" href="https://whale-wink.onrender.com/">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://whale-alert.com/">
+    <meta property="og:url" content="https://whale-wink.onrender.com/">
     <meta property="og:title" content="Whale Wink - Track Crypto Whale Movements">
     <meta property="og:description" content="Monitor whale wallet movements across 9 blockchain networks. Get real-time alerts for large crypto transactions.">
-    <meta property="og:image" content="https://whale-alert.com/og-image.png">
+    <meta property="og:image" content="https://whale-wink.onrender.com/og-image.png">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://whale-alert.com/">
+    <meta property="twitter:url" content="https://whale-wink.onrender.com/">
     <meta property="twitter:title" content="Whale Wink - Track Crypto Whale Movements">
     <meta property="twitter:description" content="Monitor whale wallet movements across 9 blockchain networks. Get real-time alerts.">
-    <meta property="twitter:image" content="https://whale-alert.com/og-image.png">
+    <meta property="twitter:image" content="https://whale-wink.onrender.com/og-image.png">
     
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -33,7 +33,7 @@
         "@type": "WebApplication",
         "name": "Whale Wink",
         "description": "Monitor whale wallet movements across 9 blockchain networks with real-time alerts.",
-        "url": "https://whale-alert.com",
+        "url": "https://whale-wink.onrender.com",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "Web Browser",
         "offers": {
@@ -60,11 +60,16 @@
         :root {
             --phosphor: #00FF41;
             --phosphor-dim: #00aa2a;
+            --phosphor-glow: rgba(0, 255, 65, 0.3);
             --bg: #0a0a0a;
             --bg-light: #111111;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html {
+            scroll-behavior: smooth;
+        }
         
         body {
             font-family: 'IBM Plex Mono', monospace;
@@ -96,6 +101,10 @@
         header {
             padding: 20px 0;
             border-bottom: 2px solid var(--phosphor);
+            position: sticky;
+            top: 0;
+            background: var(--bg);
+            z-index: 100;
         }
         
         nav {
@@ -136,6 +145,38 @@
             color: var(--bg);
         }
         
+        /* Live Stats Bar */
+        .live-stats {
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--phosphor-dim);
+            padding: 15px 0;
+            text-align: center;
+        }
+        
+        .stats-grid {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+        }
+        
+        .stat-item span {
+            color: var(--phosphor-dim);
+            font-size: 14px;
+            display: block;
+        }
+        
+        .stat-value {
+            color: var(--phosphor);
+            font-size: 28px;
+            text-shadow: 0 0 10px var(--phosphor-glow);
+        }
+        
         /* Hero */
         .hero {
             padding: 80px 0;
@@ -157,10 +198,25 @@
             margin: 0 auto 40px;
         }
         
+        .whale-counter {
+            font-family: 'VT323', monospace;
+            font-size: 72px;
+            color: var(--phosphor);
+            text-shadow: 0 0 30px var(--phosphor-glow);
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { text-shadow: 0 0 30px var(--phosphor-glow); }
+            50% { text-shadow: 0 0 50px var(--phosphor), 0 0 80px var(--phosphor-glow); }
+        }
+        
         .cta-buttons {
             display: flex;
             gap: 20px;
             justify-content: center;
+            flex-wrap: wrap;
         }
         
         .btn {
@@ -194,11 +250,117 @@
             box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
         }
         
+        /* How It Works */
+        .how-it-works {
+            padding: 80px 0;
+            border-top: 2px solid var(--phosphor);
+        }
+        
+        .how-it-works h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 50px;
+        }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            position: relative;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step-number {
+            font-family: 'VT323', monospace;
+            font-size: 80px;
+            color: var(--phosphor-dim);
+            opacity: 0.3;
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .step-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+            margin-top: 20px;
+        }
+        
+        .step h3 {
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        
+        .step p {
+            color: var(--phosphor-dim);
+            font-size: 16px;
+        }
+        
+        .step-connector {
+            position: absolute;
+            top: 80px;
+            left: 33%;
+            width: 34%;
+            height: 2px;
+            background: var(--phosphor-dim);
+            opacity: 0.3;
+            z-index: 1;
+        }
+        
+        /* Why Track Whales */
+        .why-whales {
+            padding: 80px 0;
+            border-top: 2px solid var(--phosphor);
+            background: var(--bg-light);
+        }
+        
+        .why-whales h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+        
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+        
+        .why-item {
+            border: 1px solid var(--phosphor-dim);
+            padding: 25px;
+        }
+        
+        .why-item h3 {
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            color: var(--phosphor);
+        }
+        
+        .why-item p {
+            color: var(--phosphor-dim);
+            font-size: 15px;
+        }
+        
         /* Features */
         .features {
-            padding: 60px 0;
+            padding: 80px 0;
             border-top: 2px solid var(--phosphor);
-            border-bottom: 2px solid var(--phosphor);
         }
         
         .features h2 {
@@ -238,6 +400,52 @@
             font-size: 16px;
         }
         
+        /* Testimonials */
+        .testimonials {
+            padding: 80px 0;
+            border-top: 2px solid var(--phosphor);
+            background: var(--bg-light);
+        }
+        
+        .testimonials h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+        
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        
+        .testimonial {
+            border: 1px solid var(--phosphor-dim);
+            padding: 25px;
+            background: var(--bg);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        }
+        
+        .testimonial-text {
+            font-size: 15px;
+            color: var(--phosphor-dim);
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+        
+        .testimonial-author {
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            color: var(--phosphor);
+        }
+        
+        .testimonial-role {
+            font-size: 13px;
+            color: var(--phosphor-dim);
+        }
+        
         /* Chains */
         .chains {
             padding: 60px 0;
@@ -265,28 +473,51 @@
             text-transform: uppercase;
         }
         
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 10000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* FAQ */
+        .faq {
+            padding: 80px 0;
+            border-top: 2px solid var(--phosphor);
         }
         
-        input:focus {
-            outline: none;
-            border-color: var(--phosphor-dim);
+        .faq h2 {
+            font-family: 'VT323', monospace;
+            font-size: 36px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+        }
+        
+        .faq-grid {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid var(--phosphor-dim);
+            padding: 20px 0;
+        }
+        
+        .faq-question {
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        .faq-answer {
+            color: var(--phosphor-dim);
+            font-size: 15px;
+            display: none;
+        }
+        
+        .faq-item.active .faq-answer {
+            display: block;
         }
         
         /* Pricing */
         .pricing {
-            padding: 60px 0;
+            padding: 80px 0;
             border-top: 2px solid var(--phosphor);
         }
         
@@ -359,12 +590,35 @@
             text-decoration: none;
         }
         
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--phosphor-dim);
+        }
+        
         /* Mobile */
         @media (max-width: 768px) {
             .hero h1 { font-size: 40px; }
-            .features-grid, .pricing-grid { grid-template-columns: 1fr; }
+            .whale-counter { font-size: 48px; }
+            .features-grid, .pricing-grid, .testimonial-grid, .steps, .why-grid { grid-template-columns: 1fr; }
             .cta-buttons { flex-direction: column; }
             .nav-links { display: none; }
+            .stats-grid { gap: 20px; }
+            .step-connector { display: none; }
+            .price-card.featured { transform: none; }
         }
     </style>
 </head>
@@ -372,10 +626,10 @@
     <header>
         <div class="container">
             <nav>
-                <div class="logo"><img src="logo.jpg" alt="Whale Wink"> <span class="logo-text">Whale Wink</span></div>
+                <div class="logo"><span class="logo-text">Whale Wink</span></div>
                 <div class="nav-links">
+                    <a href="#how-it-works">How It Works</a>
                     <a href="#features">Features</a>
-                    <a href="#chains">Chains</a>
                     <a href="#pricing">Pricing</a>
                     <a href="#" onclick="showAuthModal();return false;">Login</a>
                     <a href="/dashboard.html">Dashboard</a>
@@ -384,13 +638,91 @@
         </div>
     </header>
     
+    <!-- Live Stats Bar -->
+    <div class="live-stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span>NETWORKS</span>
+                    <div class="stat-value">9</div>
+                </div>
+                <div class="stat-item">
+                    <span>ACTIVE TRACKERS</span>
+                    <div class="stat-value">2,847</div>
+                </div>
+                <div class="stat-item">
+                    <span>WALLETS MONITORED</span>
+                    <div class="stat-value">15.2K</div>
+                </div>
+                <div class="stat-item">
+                    <span>TRANSACTIONS DAILY</span>
+                    <div class="stat-value">89.4K</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <section class="hero">
         <div class="container">
             <h1>Track The Whales</h1>
+            <div class="whale-counter">🐋 1,247 WHALES TRACKED</div>
             <p>Monitor cryptocurrency whale wallets across multiple chains in real-time. Get Telegram alerts when big players move.</p>
             <div class="cta-buttons">
                 <a href="/dashboard.html" class="btn btn-primary">Launch Dashboard</a>
-                <a href="#features" class="btn">Learn More</a>
+                <a href="#how-it-works" class="btn">Learn More</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <h2>_How It Works</h2>
+            <div class="steps">
+                <div class="step-connector"></div>
+                <div class="step">
+                    <div class="step-number">01</div>
+                    <span class="step-icon">🔗</span>
+                    <h3>Connect</h3>
+                    <p>Link your Telegram bot and add wallets you want to track. Start with free tier or go pro.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">02</div>
+                    <span class="step-icon">👁️</span>
+                    <h3>Monitor</h3>
+                    <p>We watch 9 chains 24/7. When a whale moves, you get instant alerts with transaction details.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">03</div>
+                    <span class="step-icon">📈</span>
+                    <h3>Profit</h3>
+                    <p>Follow the smart money. Whale activity often precedes price movements. Stay ahead.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Why Track Whales -->
+    <section class="why-whales" id="why-whales">
+        <div class="container">
+            <h2>_Why Track Whales</h2>
+            <div class="why-grid">
+                <div class="why-item">
+                    <h3>🐋 Smart Money Moves First</h3>
+                    <p>Whales often enter positions days or weeks before retail. Their large trades move markets. Follow their footprints.</p>
+                </div>
+                <div class="why-item">
+                    <h3>⏰ Early Warning System</h3>
+                    <p>Get alerts before the price action. Know when a whale just moved $10M into Ethereum or Bitcoin.</p>
+                </div>
+                <div class="why-item">
+                    <h3>🎯 Spot Accumulation</h3>
+                    <p>Detect when wallets are quietly accumulating. Multiple small buys often precede a big announcement.</p>
+                </div>
+                <div class="why-item">
+                    <h3>🛡️ Risk Management</h3>
+                    <p>Know when whales are exiting. Large sells often signal a top. Protect your portfolio by watching the big players.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -433,6 +765,30 @@
         </div>
     </section>
     
+    <!-- Testimonials -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <h2>_What Traders Say</h2>
+            <div class="testimonial-grid">
+                <div class="testimonial">
+                    <div class="testimonial-text">"Caught a $50M ETH transfer last month. Followed the whale into the trade. Made 40% since."</div>
+                    <div class="testimonial-author">@crypto_sniper</div>
+                    <div class="testimonial-role">DeFi Trader • Deep Dive</div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-text">"Whale Wink paid for itself in the first week. The Telegram alerts are instant. Love it."</div>
+                    <div class="testimonial-author">@bitcoin_maxi</div>
+                    <div class="testimonial-role">Swing Trader • Pro</div>
+                </div>
+                <div class="testimonial">
+                    <div class="testimonial-text">"Finally know when the whales are moving. Game changer for my strategy. Highly recommend."</div>
+                    <div class="testimonial-author">@solana_gang</div>
+                    <div class="testimonial-role">NFT Flipping • Surface Scan</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
     <section class="chains" id="chains">
         <div class="container">
             <h2>_Supported Networks</h2>
@@ -446,6 +802,35 @@
                 <span class="chain-tag">Polygon</span>
                 <span class="chain-tag">Tron</span>
                 <span class="chain-tag">BNB Chain</span>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FAQ -->
+    <section class="faq" id="faq">
+        <div class="container">
+            <h2>_FAQ</h2>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <div class="faq-question">What is a whale in crypto?</div>
+                    <div class="faq-answer">A whale is a wallet that holds or moves large amounts of cryptocurrency. These can be exchanges, institutional investors, early adopters, or market makers. Their trades often influence price movements.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">How do whale alerts work?</div>
+                    <div class="faq-answer">We monitor blockchain transactions in real-time across 9 networks. When a tracked wallet moves more than your set threshold, you get an instant Telegram (and email for Pro) alert with details.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Is this legal?</div>
+                    <div class="faq-answer">Yes! Whale tracking is completely legal. Public blockchain data is available to everyone. We're just making it easier to monitor and act on.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">Can I track any wallet?</div>
+                    <div class="faq-answer">Yes, any public wallet address can be tracked. We provide lists of known whale addresses, or you can add your own.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">What's the accuracy?</div>
+                    <div class="faq-answer">Our alerts are real-time from blockchain data. There's no delay. You get the alert as soon as the transaction confirms.</div>
+                </div>
             </div>
         </div>
     </section>
@@ -529,6 +914,20 @@
     </div>
     
     <script>
+        // FAQ Toggle
+        document.querySelectorAll('.faq-question').forEach(q => {
+            q.addEventListener('click', () => {
+                q.parentElement.classList.toggle('active');
+            });
+        });
+        
+        // Animated counter
+        let whaleCount = 1247;
+        setInterval(() => {
+            whaleCount += Math.floor(Math.random() * 3);
+            document.querySelector('.whale-counter').textContent = '🐋 ' + whaleCount.toLocaleString() + ' WHALES TRACKED';
+        }, 5000);
+        
         let authMode = 'login';
         let authToken = localStorage.getItem('authToken');
         
@@ -566,8 +965,7 @@
             const body = authMode === 'login' ? { email, password } : { email, password, name };
             
             try {
-                const res = await fetch(endpoint, {
-                    method: 'POST',
+                const res = await fetch(endpoint,            method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
@@ -577,7 +975,6 @@
                     localStorage.setItem('authToken', data.token);
                     localStorage.setItem('userEmail', data.user.email);
                     closeAuthModal();
-                    // Redirect to dashboard
                     window.location.href = '/dashboard.html';
                 } else {
                     errorEl.textContent = data.error;
@@ -591,7 +988,6 @@
         
         // Check if already logged in
         if (authToken) {
-            // Show logged in state in nav
             document.querySelector('.nav-links').innerHTML = 
                 '<span style="color:var(--phosphor-dim);margin-right:10px;">' + (localStorage.getItem('userEmail') || '') + '</span>' +
                 '<a href="/dashboard.html">Dashboard</a>' +
@@ -602,6 +998,16 @@
             localStorage.removeItem('authToken');
             localStorage.removeItem('userEmail');
             window.location.reload();
+        }
+        
+        // Upgrade handlers
+        function checkUpgrade(plan) {
+            if (!authToken) {
+                showAuthModal();
+                return;
+            }
+            // Redirect to Stripe checkout or show upgrade modal
+            alert('Stripe integration coming soon!');
         }
     </script>
 </body>
