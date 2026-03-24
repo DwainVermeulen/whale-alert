@@ -356,6 +356,19 @@ app.get('/robots.txt', (req, res) => {
     res.sendFile(path.join(staticPath, 'public', 'robots.txt'));
 });
 
+// Policy pages for Paddle
+app.get('/tos.html', (req, res) => {
+    res.sendFile(path.join(staticPath, 'public', 'tos.html'));
+});
+
+app.get('/privacy.html', (req, res) => {
+    res.sendFile(path.join(staticPath, 'public', 'privacy.html'));
+});
+
+app.get('/refund.html', (req, res) => {
+    res.sendFile(path.join(staticPath, 'public', 'refund.html'));
+});
+
 // ============================================
 // WEBSOCKET SERVER
 // ============================================
